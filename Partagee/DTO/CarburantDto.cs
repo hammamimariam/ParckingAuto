@@ -1,0 +1,15 @@
+using System;
+
+namespace ParckingAuto.DTO
+{
+    public class CarburantDto
+    {
+        public int Id { get; set; }
+        public DateTime Date { get; set; }
+        public double Litres { get; set; }
+        public double Cout { get; set; }
+        public double Kilometrage { get; set; }
+        public int VehiculeId { get; set; }
+        public string VehiculeImmatriculation { get; set; } = string.Empty;
+    }
+}

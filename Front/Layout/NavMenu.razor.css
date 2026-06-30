@@ -1,0 +1,60 @@
+.sidebar-custom {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 250px;
+    overflow-y: auto;
+    z-index: 200;
+    background-color: #f8f9fa;
+    border-right: 1px solid rgba(0, 48, 73, 0.1);
+}
+
+.sidebar-brand-name {
+    color: #003049;
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.sidebar-logo {
+    height: 48px;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+.sidebar-divider {
+    border-color: rgba(0, 48, 73, 0.15);
+    margin: 0.5rem 0 1rem;
+}
+
+.sidebar-nav .nav-item {
+    margin-bottom: 0.25rem;
+}
+
+.sidebar-nav .nav-item ::deep a {
+    color: #000 !important;
+    font-weight: 500;
+    border-radius: 8px;
+    padding: 0.6rem 0.85rem;
+    display: flex;
+    align-items: center;
+}
+
+.sidebar-nav .nav-item ::deep a:hover {
+    background-color: rgba(102, 155, 188, 0.15);
+    color: #003049 !important;
+}
+
+.sidebar-nav .nav-item ::deep a.active {
+    background-color: #C1121F !important;
+    color: #fff !important;
+}
+
+.sidebar-nav .nav-item ::deep a.active i {
+    color: #fff !important;
+}
+
+.sidebar-nav .nav-item ::deep a i {
+    color: #003049;
+    font-size: 1.1rem;
+}

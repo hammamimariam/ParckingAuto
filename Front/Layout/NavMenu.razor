@@ -1,0 +1,67 @@
+@inject AuthService AuthService
+@implements IDisposable
+
+<div class="sidebar-custom p-3">
+    <div class="sidebar-brand mb-3 text-center">
+        <img src="logo.png" alt="ParckingAuto" class="sidebar-logo mb-2" />
+        <div class="sidebar-brand-name">ParckingAuto</div>
+    </div>
+
+    <hr class="sidebar-divider" />
+
+  @if (string.IsNullOrEmpty(AuthService.Role))
+    {
+        <div class="text-center py-3 text-muted small">
+            <div class="spinner-border spinner-border-sm mb-2" role="status"></div>
+            <div>Chargement du menu...</div>
+        </div>
+    }
+    else
+    {
+        <ul class="nav flex-column sidebar-nav">
+            @if (AuthService.Role == "Administrateur")
+            {
+                <li class="nav-item"><NavLink href="/dashboard" class="nav-link"><i class="bi bi-speedometer2 me-2"></i>Tableau de bord</NavLink></li>
+                <li class="nav-item"><NavLink href="/settings" class="nav-link"><i class="bi bi-gear me-2"></i>Paramètres</NavLink></li>
+                <li class="nav-item"><NavLink href="/utilisateurs" class="nav-link"><i class="bi bi-people me-2"></i>Collaborateurs</NavLink></li>
+                <li class="nav-item"><NavLink href="/vehicules" class="nav-link"><i class="bi bi-car-front me-2"></i>Véhicules</NavLink></li>
+                <li class="nav-item"><NavLink href="/chauffeurs" class="nav-link"><i class="bi bi-person-badge me-2"></i>Chauffeurs</NavLink></li>
+                <li class="nav-item"><NavLink href="/mouvements" class="nav-link"><i class="bi bi-arrow-left-right me-2"></i>Mouvements</NavLink></li>
+                <li class="nav-item"><NavLink href="/carburant" class="nav-link"><i class="bi bi-fuel-pump me-2"></i>Carburant</NavLink></li>
+                <li class="nav-item"><NavLink href="/maintenance" class="nav-link"><i class="bi bi-tools me-2"></i>Maintenance</NavLink></li>
+                <li class="nav-item"><NavLink href="/documents" class="nav-link"><i class="bi bi-file-earmark me-2"></i>Documents</NavLink></li>
+                <li class="nav-item"><NavLink href="/alertes" class="nav-link"><i class="bi bi-bell me-2"></i>Alertes</NavLink></li>
+                <li class="nav-item"><NavLink href="/statistiques" class="nav-link"><i class="bi bi-graph-up me-2"></i>Statistiques</NavLink></li>
+            }
+            else if (AuthService.Role == "Gestionnaire")
+            {
+                <li class="nav-item"><NavLink href="/dashboard" class="nav-link"><i class="bi bi-speedometer2 me-2"></i>Tableau de bord</NavLink></li>
+                <li class="nav-item"><NavLink href="/vehicules" class="nav-link"><i class="bi bi-car-front me-2"></i>Véhicules</NavLink></li>
+                <li class="nav-item"><NavLink href="/chauffeurs" class="nav-link"><i class="bi bi-person-badge me-2"></i>Chauffeurs</NavLink></li>
+                <li class="nav-item"><NavLink href="/mouvements" class="nav-link"><i class="bi bi-arrow-left-right me-2"></i>Mouvements</NavLink></li>
+                <li class="nav-item"><NavLink href="/carburant" class="nav-link"><i class="bi bi-fuel-pump me-2"></i>Carburant</NavLink></li>
+                <li class="nav-item"><NavLink href="/maintenance" class="nav-link"><i class="bi bi-tools me-2"></i>Maintenance</NavLink></li>
+                <li class="nav-item"><NavLink href="/alertes" class="nav-link"><i class="bi bi-bell me-2"></i>Alertes</NavLink></li>
+                <li class="nav-item"><NavLink href="/statistiques" class="nav-link"><i class="bi bi-graph-up me-2"></i>Statistiques</NavLink></li>
+            }
+            else if (AuthService.Role == "Chauffeur")
+            {
+                <li class="nav-item"><NavLink href="/mouvements" class="nav-link"><i class="bi bi-arrow-left-right me-2"></i>Mes missions</NavLink></li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        AuthService.AuthStateChanged += OnAuthStateChanged;
+
+        if (string.IsNullOrEmpty(AuthService.Token))
+            await AuthService.TryRestoreSessionAsync();
+    }
+
+    private void OnAuthStateChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => AuthService.AuthStateChanged -= OnAuthStateChanged;
+}

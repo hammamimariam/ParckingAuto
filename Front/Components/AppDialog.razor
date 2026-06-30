@@ -1,0 +1,60 @@
+@using Front.Services
+@inject DialogService Dialog
+@implements IDisposable
+
+@if (Dialog.IsVisible)
+{
+    <div class="app-dialog-backdrop" @onclick="OnBackdropClick">
+        <div class="app-dialog animate-fade-in" @onclick:stopPropagation="true">
+            <div class="app-dialog-icon @IconClass">
+                <i class="bi @IconName"></i>
+            </div>
+            <h5 class="app-dialog-title">@Dialog.Title</h5>
+            <p class="app-dialog-message">@Dialog.Message</p>
+            <div class="app-dialog-actions">
+                @if (Dialog.IsConfirm)
+                {
+                    <button type="button" class="btn btn-outline-secondary" @onclick="() => Dialog.Close(false)">
+                        @Dialog.CancelText
+                    </button>
+                    <button type="button" class="btn btn-custom-danger" @onclick="() => Dialog.Close(true)">
+                        @Dialog.ConfirmText
+                    </button>
+                }
+                else
+                {
+                    <button type="button" class="btn btn-custom-primary" @onclick="() => Dialog.Close(true)">
+                        @Dialog.OkText
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    protected override void OnInitialized() => Dialog.OnChange += StateHasChanged;
+
+    public void Dispose() => Dialog.OnChange -= StateHasChanged;
+
+    private void OnBackdropClick()
+    {
+        Dialog.Close(!Dialog.IsConfirm);
+    }
+
+    private string IconClass => Dialog.Type switch
+    {
+        DialogType.Success => "dialog-success",
+        DialogType.Warning => "dialog-warning",
+        DialogType.Error => "dialog-error",
+        _ => "dialog-info"
+    };
+
+    private string IconName => Dialog.Type switch
+    {
+        DialogType.Success => "bi-check-circle-fill",
+        DialogType.Warning => "bi-exclamation-triangle-fill",
+        DialogType.Error => "bi-x-circle-fill",
+        _ => "bi-info-circle-fill"
+    };
+}

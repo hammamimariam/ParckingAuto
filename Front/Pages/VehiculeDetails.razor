@@ -1,0 +1,162 @@
+@page "/vehicule/{Id:int}"
+@using ParckingAuto.DTO
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<div class="container mt-4 animate-fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="title-custom mb-0"><i class="bi bi-car-front me-2"></i>Suivi véhicule</h2>
+        <button class="btn btn-outline-secondary" @onclick="GoBack"><i class="bi bi-arrow-left me-1"></i> Retour</button>
+    </div>
+
+    @if (IsLoading)
+    {
+        <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+    }
+    else if (ErrorMessage != null)
+    {
+        <div class="alert alert-danger">@ErrorMessage</div>
+    }
+    else if (Suivi != null)
+    {
+        var v = Suivi.Vehicule;
+        <div class="row g-3 mb-4">
+            <div class="col-md-8">
+                <div class="card card-custom p-4">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                        <h4 class="mb-0">@v.Marque @v.Modele</h4>
+                        <span class="plate-number">@v.Immatriculation</span>
+                        <span class="badge @(v.Statut == "En mission" ? "bg-warning text-dark" : "bg-success")">@v.Statut</span>
+                    </div>
+                    <div class="row g-2 small">
+                        <div class="col-md-4"><strong>Kilométrage :</strong> @v.Kilometrage.ToString("N0") km</div>
+                        <div class="col-md-4"><strong>Depuis vidange :</strong> @Suivi.KmDepuisVidange.ToString("N0") km</div>
+                        <div class="col-md-4"><strong>Carburant :</strong> @v.TypeCarburant</div>
+                        <div class="col-md-4"><strong>Assurance :</strong> @(string.IsNullOrWhiteSpace(v.Assurance) ? "—" : v.Assurance)</div>
+                        <div class="col-md-4"><strong>Expiration :</strong> @(v.AssuranceDate?.ToString("dd/MM/yyyy") ?? "—")</div>
+                        <div class="col-md-4"><strong>Visite technique :</strong> @(v.ProchaineVisite?.ToString("dd/MM/yyyy") ?? "—")</div>
+                        <div class="col-md-4"><strong>Châssis :</strong> @(string.IsNullOrWhiteSpace(v.NumeroChassis) ? "—" : v.NumeroChassis)</div>
+                        <div class="col-md-4"><strong>Genre :</strong> @(string.IsNullOrWhiteSpace(v.GenreVehicule) ? "—" : v.GenreVehicule)</div>
+                        <div class="col-md-4"><strong>Consommation moy. :</strong> @(Suivi.ConsommationMoyenne > 0 ? $"{Suivi.ConsommationMoyenne:N1} L/100km" : "—")</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card card-custom p-3 mb-3">
+                    <span class="text-muted small">Coût carburant (mois)</span>
+                    <h4 class="text-navy mb-0">@Suivi.CoutCarburantMoisCourant.ToString("N3") DT</h4>
+                    <small class="text-muted">@Suivi.LitresMoisCourant.ToString("N1") L</small>
+                </div>
+                <div class="card card-custom p-3">
+                    <span class="text-muted small">Coût maintenance (mois)</span>
+                    <h4 class="text-maroon mb-0">@Suivi.CoutMaintenanceMoisCourant.ToString("N3") DT</h4>
+                    <small class="text-muted">Total : @Suivi.CoutMaintenanceTotal.ToString("N3") DT</small>
+                </div>
+            </div>
+        </div>
+
+        @if (Suivi.AlertesActives.Any())
+        {
+            <div class="alert alert-warning">
+                <strong><i class="bi bi-exclamation-triangle me-1"></i>Alertes actives :</strong>
+                @Suivi.AlertesActives.Count alerte(s) — consultez la page Alertes.
+            </div>
+        }
+
+        <ul class="nav nav-tabs mb-3">
+            <li class="nav-item"><button class="nav-link @(ActiveTab == "mouvements" ? "active" : "")" @onclick='() => ActiveTab = "mouvements"'>Mouvements (@Suivi.DerniersMouvements.Count)</button></li>
+            <li class="nav-item"><button class="nav-link @(ActiveTab == "carburant" ? "active" : "")" @onclick='() => ActiveTab = "carburant"'>Carburant (@Suivi.DerniersPleins.Count)</button></li>
+            <li class="nav-item"><button class="nav-link @(ActiveTab == "maintenance" ? "active" : "")" @onclick='() => ActiveTab = "maintenance"'>Maintenance (@Suivi.DernieresMaintenances.Count)</button></li>
+        </ul>
+
+        @if (ActiveTab == "mouvements")
+        {
+            <div class="table-responsive">
+                <table class="table table-custom">
+                    <thead><tr><th>Départ</th><th>Retour</th><th>Chauffeur</th><th>Km départ</th><th>Km retour</th><th>Parcourus</th><th>Destination</th></tr></thead>
+                    <tbody>
+                        @foreach (var m in Suivi.DerniersMouvements)
+                        {
+                            var kmParc = m.KmRetour.HasValue ? m.KmRetour.Value - m.KmDepart : (int?)null;
+                            <tr>
+                                <td>@m.DateDepart.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@(m.DateRetour?.ToString("dd/MM/yyyy HH:mm") ?? "—")</td>
+                                <td>@m.ChauffeurNomComplet</td>
+                                <td>@m.KmDepart</td>
+                                <td>@(m.KmRetour?.ToString() ?? "—")</td>
+                                <td>@(kmParc?.ToString() ?? "—")</td>
+                                <td>@m.Destination</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else if (ActiveTab == "carburant")
+        {
+            <div class="table-responsive">
+                <table class="table table-custom">
+                    <thead><tr><th>Date</th><th>Litres</th><th>Coût</th><th>Kilométrage</th></tr></thead>
+                    <tbody>
+                        @foreach (var c in Suivi.DerniersPleins)
+                        {
+                            <tr>
+                                <td>@c.Date.ToString("dd/MM/yyyy")</td>
+                                <td>@c.Litres.ToString("N1") L</td>
+                                <td>@c.Cout.ToString("N3") DT</td>
+                                <td>@c.Kilometrage.ToString("N0") km</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-custom">
+                    <thead><tr><th>Date</th><th>Type</th><th>Km</th><th>Fournisseur</th><th>Coût</th></tr></thead>
+                    <tbody>
+                        @foreach (var m in Suivi.DernieresMaintenances)
+                        {
+                            <tr>
+                                <td>@m.DateIntervention.ToString("dd/MM/yyyy")</td>
+                                <td>@m.TypeIntervention</td>
+                                <td>@m.KilometrageIntervention.ToString("N0") km</td>
+                                <td>@m.Fournisseur</td>
+                                <td>@m.Cout.ToString("N3") DT</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private VehiculeSuiviDto? Suivi;
+    private bool IsLoading = true;
+    private string? ErrorMessage;
+    private string ActiveTab = "mouvements";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Suivi = await Http.GetFromJsonAsync<VehiculeSuiviDto>($"Vehicules/{Id}/suivi");
+            if (Suivi == null) ErrorMessage = "Véhicule introuvable.";
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Erreur : {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    void GoBack() => Navigation.NavigateTo("/vehicules");
+}

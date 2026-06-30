@@ -1,0 +1,78 @@
+@page "/statistiques"
+@using ParckingAuto.DTO
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<h3 class="title-custom mb-4"><i class="bi bi-graph-up me-2"></i>Statistiques de la flotte</h3>
+
+@if (LoadError != null)
+{
+    <div class="alert alert-warning">@LoadError</div>
+}
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card card-custom p-3">
+            <h5 class="text-navy">Coût maintenance par mois (DT)</h5>
+            <div style="height:280px"><canvas id="coutChart"></canvas></div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card card-custom p-3">
+            <h5 class="text-navy">Coût carburant par mois (DT)</h5>
+            <div style="height:280px"><canvas id="fuelCostChart"></canvas></div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card card-custom p-3">
+            <h5 class="text-navy">Consommation moyenne flotte (L/100km / mois)</h5>
+            <div style="height:280px"><canvas id="consoMoisChart"></canvas></div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card card-custom p-3">
+            <h5 class="text-navy">Consommation moyenne par véhicule (L/100km)</h5>
+            <div style="height:280px"><canvas id="consoChart"></canvas></div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private StatistiquesDto? Stats;
+    private string? LoadError;
+    private bool _chartsRendered;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _chartsRendered = false;
+        try
+        {
+            Stats = await Http.GetFromJsonAsync<StatistiquesDto>("Statistiques");
+        }
+        catch (Exception ex)
+        {
+            LoadError = "Impossible de charger les statistiques : " + ex.Message;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_chartsRendered || Stats == null) return;
+
+        var labels = Stats.ConsommationParVehicule.Select(c => c.Immatriculation).ToArray();
+        var data = Stats.ConsommationParVehicule.Select(c => c.ConsommationMoyenne).ToArray();
+        var cout = Stats.CoutMaintenanceParMois.Select(c => (double)c).ToArray();
+        var fuelCost = Stats.CoutCarburantParMois.Select(c => (double)c).ToArray();
+        var consoMois = Stats.ConsommationMoyenneParMois.ToArray();
+
+        try
+        {
+            await JS.InvokeVoidAsync("renderStatsCharts", Stats.Mois, cout, fuelCost, consoMois, labels, data);
+            _chartsRendered = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error rendering stats charts: " + ex.Message);
+        }
+    }
+}

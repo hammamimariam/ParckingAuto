@@ -1,0 +1,16 @@
+﻿using ParckingAuto.DTO;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
+
+public class StatistiqueService
+{
+    private readonly HttpClient _http;
+
+    public StatistiqueService(HttpClient http)
+    {
+        _http = http;
+    }
+
+    public async Task<DashboardDto> GetDashboardAsync()
+        => await _http.GetFromJsonAsync<DashboardDto>("Dashboard");
+}

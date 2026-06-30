@@ -1,0 +1,97 @@
+.btn-notif[b-u7la5v7yl5] {
+    background: transparent;
+    border: 1px solid rgba(0, 48, 73, 0.15);
+    color: #003049;
+    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    padding: 0;
+    transition: all 0.2s ease;
+}
+
+.btn-notif:hover[b-u7la5v7yl5],
+.btn-notif:focus[b-u7la5v7yl5] {
+    background-color: rgba(102, 155, 188, 0.12);
+    border-color: #669BBC;
+    color: #003049;
+}
+
+.notif-badge[b-u7la5v7yl5] {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 10px;
+    background-color: #669BBC;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fff;
+}
+
+.notif-badge-critical[b-u7la5v7yl5] {
+    background-color: #C1121F;
+    animation: notif-pulse-b-u7la5v7yl5 1.5s ease-in-out infinite;
+}
+
+.notif-dropdown[b-u7la5v7yl5] {
+    width: 340px;
+    max-width: 90vw;
+    padding: 0;
+    border: 1px solid rgba(0, 48, 73, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.notif-dropdown-header[b-u7la5v7yl5] {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid rgba(0, 48, 73, 0.08);
+    background: #FCFBF9;
+}
+
+.notif-dropdown-footer[b-u7la5v7yl5] {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid rgba(0, 48, 73, 0.08);
+    background: #fff;
+}
+
+.notif-item[b-u7la5v7yl5] {
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: none;
+    border-bottom: 1px solid rgba(0, 48, 73, 0.06);
+    background: #fff;
+    padding: 0.75rem 1rem;
+    transition: background 0.15s ease;
+}
+
+.notif-item:hover[b-u7la5v7yl5] {
+    background: rgba(253, 240, 213, 0.35);
+}
+
+.notif-item.notif-critical[b-u7la5v7yl5] {
+    border-left: 3px solid #C1121F;
+}
+
+.notif-empty[b-u7la5v7yl5] {
+    padding: 1.5rem 1rem;
+    text-align: center;
+}
+
+@keyframes notif-pulse-b-u7la5v7yl5 {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+}

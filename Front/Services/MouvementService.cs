@@ -1,0 +1,20 @@
+﻿using ParckingAuto.DTO;
+using System.Net.Http.Json;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+public class MouvementService
+{
+    private readonly HttpClient _http;
+
+    public MouvementService(HttpClient http)
+    {
+        _http = http;
+    }
+
+    public async Task<List<MouvementDto>> GetAllAsync()
+        => await _http.GetFromJsonAsync<List<MouvementDto>>("Mouvements");
+
+    public async Task AddAsync(MouvementDto mouvement)
+        => await _http.PostAsJsonAsync("Mouvements", mouvement);
+}

@@ -1,0 +1,64 @@
+.app-shell[b-pzwjewwokz] {
+    min-height: 100vh;
+}
+
+.app-navbar[b-pzwjewwokz] {
+    background-color: #fff;
+    border-bottom: 1px solid rgba(0, 48, 73, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.navbar-logo[b-pzwjewwokz] {
+    height: 40px;
+    width: auto;
+    object-fit: contain;
+}
+
+.navbar-title[b-pzwjewwokz] {
+    font-weight: 700;
+}
+
+.btn-profile[b-pzwjewwokz] {
+    background: transparent;
+    border: 1px solid rgba(0, 48, 73, 0.15);
+    color: #003049;
+    border-radius: 50px;
+    padding: 0.35rem 0.85rem 0.35rem 0.35rem;
+}
+
+.btn-profile:hover[b-pzwjewwokz],
+.btn-profile:focus[b-pzwjewwokz] {
+    background-color: rgba(102, 155, 188, 0.12);
+    border-color: #669BBC;
+    color: #003049;
+}
+
+.profile-icon-circle[b-pzwjewwokz] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background-color: #003049;
+    color: #fff;
+    font-size: 1.1rem;
+}
+
+.profile-label[b-pzwjewwokz] {
+    font-weight: 500;
+    color: #003049;
+}
+
+.main-content[b-pzwjewwokz] {
+    margin-left: 250px;
+    background-color: #FAF6EE;
+    min-height: 100vh;
+    width: calc(100% - 250px);
+}
+
+.text-navy[b-pzwjewwokz] {
+    color: #003049;
+}

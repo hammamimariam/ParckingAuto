@@ -1,0 +1,6 @@
+﻿namespace ParckingAuto.DTO
+{
+    public class CarburantDto
+    {
+    }
+}

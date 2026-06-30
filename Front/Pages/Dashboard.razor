@@ -1,0 +1,206 @@
+@page "/dashboard"
+@using ParckingAuto.DTO
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<div class="container mt-4 animate-fade-in">
+    <h2 class="title-custom mb-4"><i class="bi bi-speedometer2 me-2"></i>Tableau de bord</h2>
+
+    <div class="row g-3">
+        <div class="col-md-3">
+            <div class="card card-custom card-kpi p-3 shadow-sm border-bottom-navy">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted d-block text-uppercase small">Véhicules</span>
+                        <h2 class="text-navy text-bold mb-0">@NbVehicules</h2>
+                    </div>
+                    <div class="icon-circle bg-navy-light text-navy">
+                        <i class="bi bi-car-front-fill fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-custom card-kpi p-3 shadow-sm border-bottom-steel">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted d-block text-uppercase small">Chauffeurs</span>
+                        <h2 class="text-steel text-bold mb-0">@NbChauffeurs</h2>
+                    </div>
+                    <div class="icon-circle bg-steel-light text-steel">
+                        <i class="bi bi-person-badge-fill fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-custom card-kpi p-3 shadow-sm border-bottom-red">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted d-block text-uppercase small">Alertes</span>
+                        <h2 class="text-red text-bold mb-0">@NbAlertes</h2>
+                    </div>
+                    <div class="icon-circle bg-red-light text-red">
+                        <i class="bi bi-exclamation-triangle-fill fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-custom card-kpi p-3 shadow-sm border-bottom-maroon">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted d-block text-uppercase small">Coût Maintenance (6 mois)</span>
+                        <h2 class="text-maroon text-bold mb-0">@CoutMaintenance.ToString("N3") DT</h2>
+                    </div>
+                    <div class="icon-circle bg-maroon-light text-maroon">
+                        <i class="bi bi-cash-coin fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3 g-3">
+        <div class="col-md-4">
+            <div class="card card-custom p-3">
+                <span class="text-muted small">Véhicules en mission</span>
+                <h3 class="text-navy mb-0">@VehiculesEnMission</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card card-custom p-3">
+                <span class="text-muted small">Véhicules au parking</span>
+                <h3 class="text-steel mb-0">@VehiculesAuParking</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card card-custom p-3">
+                <span class="text-muted small">Coût carburant (6 mois)</span>
+                <h3 class="text-maroon mb-0">@CoutCarburant6Mois.ToString("N3") DT</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4 g-4">
+        <div class="col-md-6">
+            <div class="card card-custom shadow-sm p-4 h-100">
+                <h5 class="text-navy mb-3"><i class="bi bi-funnel-fill me-2"></i>Consommation Carburant (Litres / Mois)</h5>
+                <div class="chart-container">
+                    <canvas id="fuelChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card card-custom shadow-sm p-4 h-100">
+                <h5 class="text-navy mb-3"><i class="bi bi-cash-coin me-2"></i>Coût Maintenance (DT / Mois)</h5>
+                <div class="chart-container">
+                    <canvas id="maintenanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4 g-4">
+        <div class="col-md-6">
+            <div class="card card-custom shadow-sm p-4 h-100">
+                <h5 class="text-navy mb-3"><i class="bi bi-pie-chart-fill me-2"></i>État du Parc de Véhicules</h5>
+                <div class="chart-container">
+                    <canvas id="vehiculesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card-kpi {
+        transition: transform 0.25s ease-in-out;
+    }
+    .card-kpi:hover {
+        transform: translateY(-5px);
+    }
+    .border-bottom-navy { border-bottom: 4px solid #003049; }
+    .border-bottom-steel { border-bottom: 4px solid #669BBC; }
+    .border-bottom-red { border-bottom: 4px solid #C1121F; }
+    .border-bottom-maroon { border-bottom: 4px solid #780000; }
+
+    .bg-navy-light { background-color: rgba(0, 48, 73, 0.1); }
+    .bg-steel-light { background-color: rgba(102, 155, 188, 0.1); }
+    .bg-red-light { background-color: rgba(193, 18, 31, 0.1); }
+    .bg-maroon-light { background-color: rgba(120, 0, 0, 0.1); }
+
+    .text-maroon { color: #780000; }
+    .text-steel { color: #669BBC; }
+
+    .icon-circle {
+        width: 3.5rem;
+        height: 3.5rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .chart-container {
+        position: relative;
+        height: 250px;
+        width: 100%;
+    }
+</style>
+
+@code {
+    private int NbVehicules;
+    private int NbChauffeurs;
+    private int NbAlertes;
+    private decimal CoutMaintenance;
+    private int VehiculesEnMission;
+    private int VehiculesAuParking;
+    private double ConsommationTotal;
+    private double CoutCarburant6Mois;
+    private DashboardChartsDto? Charts;
+    private bool _chartsRendered;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _chartsRendered = false;
+        try
+        {
+            NbVehicules = await Http.GetFromJsonAsync<int>("Dashboard/nbVehicules");
+            NbChauffeurs = await Http.GetFromJsonAsync<int>("Dashboard/nbChauffeurs");
+            NbAlertes = await Http.GetFromJsonAsync<int>("Dashboard/nbAlertes");
+            CoutMaintenance = await Http.GetFromJsonAsync<decimal>("Dashboard/coutMaintenance");
+            Charts = await Http.GetFromJsonAsync<DashboardChartsDto>("Dashboard/charts");
+            if (Charts != null)
+            {
+                VehiculesEnMission = Charts.VehiculesEnMission;
+                VehiculesAuParking = Charts.VehiculesAuParking;
+                ConsommationTotal = Charts.ConsommationCarburantTotal;
+                CoutCarburant6Mois = Charts.CoutCarburant6Mois;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error loading dashboard: " + ex.Message);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_chartsRendered || Charts == null) return;
+
+        try
+        {
+            await JS.InvokeVoidAsync("renderCharts",
+                Charts.Mois,
+                Charts.LitresParMois,
+                Charts.VehiculesEnMission,
+                Charts.VehiculesAuParking,
+                Charts.CoutMaintenanceParMois);
+            _chartsRendered = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error rendering dashboard charts: " + ex.Message);
+        }
+    }
+}

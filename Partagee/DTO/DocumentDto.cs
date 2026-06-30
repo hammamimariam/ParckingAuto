@@ -1,0 +1,14 @@
+using System;
+
+namespace ParckingAuto.DTO
+{
+    public class DocumentDto
+    {
+        public int Id { get; set; }
+        public int VehiculeId { get; set; }
+        public string TypeDocument { get; set; } = string.Empty;
+        public string Fichier { get; set; } = string.Empty;
+        public DateTime DateUpload { get; set; }
+        public string VehiculeImmatriculation { get; set; } = string.Empty;
+    }
+}

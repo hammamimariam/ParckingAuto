@@ -1,0 +1,6 @@
+@ParckingAuto_HostAddress = http://localhost:5199
+
+GET {{ParckingAuto_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

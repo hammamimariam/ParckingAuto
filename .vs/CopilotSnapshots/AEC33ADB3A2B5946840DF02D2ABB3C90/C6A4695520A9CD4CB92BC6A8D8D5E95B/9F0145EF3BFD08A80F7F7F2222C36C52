@@ -1,0 +1,13 @@
+﻿namespace ParckingAuto.DTO
+{
+    public class VehiculeDto
+    {
+        public int Id { get; set; }
+        public string Immatriculation { get; set; } = string.Empty;
+        public string Marque { get; set; } = string.Empty;
+        public string Modele { get; set; } = string.Empty;
+        public int AnneeFabrication { get; set; }
+        public int Kilometrage { get; set; }
+        public string TypeCarburant { get; set; } = string.Empty;
+    }
+}

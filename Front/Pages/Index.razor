@@ -1,0 +1,33 @@
+@page "/"
+@inject AuthService AuthService
+@inject NavigationManager Nav
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(AuthService.Token))
+            await AuthService.TryRestoreSessionAsync();
+
+        if (string.IsNullOrEmpty(AuthService.Token))
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        switch (AuthService.Role)
+            {
+                case "Administrateur":
+                    Nav.NavigateTo("/dashboard");
+                    break;
+                case "Gestionnaire":
+                    Nav.NavigateTo("/dashboard");
+                    break;
+                case "Chauffeur":
+                    Nav.NavigateTo("/mouvements");
+                    break;
+                default:
+                    Nav.NavigateTo("/login");
+                    break;
+            }
+    }
+}

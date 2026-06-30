@@ -1,0 +1,251 @@
+@page "/utilisateurs"
+@using ParckingAuto.DTO
+@inject UtilisateurService UserService
+@inject AuthService AuthService
+@inject NavigationManager Nav
+@inject DialogService Dialog
+
+<div class="container mt-4 animate-fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="title-custom"><i class="bi bi-people-fill me-2"></i>Gestion des Collaborateurs</h2>
+        <button class="btn btn-custom-primary" @onclick="ShowAddForm">
+            <i class="bi bi-person-plus-fill me-1"></i> Ajouter un Collaborateur
+        </button>
+    </div>
+
+    @if (ShowForm)
+    {
+        <div class="card card-custom p-4 mb-4 animate-slide-down">
+            <h4 class="mb-3 text-navy">@(EditingUserId == 0 ? "Ajouter un Collaborateur" : "Modifier le Collaborateur")</h4>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Nom Complet</label>
+                    <input class="form-control" @bind="FormUser.Nom" placeholder="Ex: Jean Dupont" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Adresse Email</label>
+                    <input type="email" class="form-control" @bind="FormUser.Email" placeholder="Ex: jean.dupont@societe.com" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Mot de passe</label>
+                    <input type="password" class="form-control" @bind="FormUser.MotDePasse"
+                           placeholder="@(EditingUserId == 0 ? "Mot de passe de connexion" : "Laisser vide pour ne pas changer")" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Rôle / Accès</label>
+                    <select class="form-select" @bind="FormUser.Role">
+                        <option value="Administrateur">Administrateur</option>
+                        <option value="Gestionnaire">Gestionnaire</option>
+                        <option value="Chauffeur">Chauffeur</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-outline-secondary" @onclick="CancelForm">Annuler</button>
+                <button class="btn btn-custom-success" @onclick="SaveUser">
+                    <i class="bi bi-save me-1"></i> Enregistrer
+                </button>
+            </div>
+        </div>
+    }
+
+    @if (Users == null)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Chargement des collaborateurs...</p>
+        </div>
+    }
+    else if (!Users.Any())
+    {
+        <div class="alert alert-info text-center">Aucun collaborateur trouvé.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-custom">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Email</th>
+                        <th>Rôle</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var u in Users)
+                    {
+                        <tr>
+                            <td><strong>@u.Nom</strong></td>
+                            <td>@u.Email</td>
+                            <td>
+                                <span class="badge @GetRoleBadgeClass(u.Role)">@u.Role</span>
+                            </td>
+                            <td class="text-end text-nowrap">
+                                <button class="btn btn-sm btn-outline-navy me-1" title="Modifier" @onclick="() => EditUser(u)">
+                                    <i class="bi bi-pencil"></i> Modifier
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" title="Supprimer" @onclick="() => DeleteUser(u)">
+                                    <i class="bi bi-trash"></i> Supprimer
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<UserDto>? Users;
+    private RegisterRequest FormUser = new() { Role = "Gestionnaire" };
+    private int EditingUserId;
+    private bool ShowForm;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthService.Role != "Administrateur")
+        {
+            Nav.NavigateTo("/dashboard");
+            return;
+        }
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            Users = await UserService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error loading users: " + ex.Message);
+        }
+    }
+
+    private void ShowAddForm()
+    {
+        EditingUserId = 0;
+        FormUser = new RegisterRequest { Role = "Gestionnaire" };
+        ShowForm = true;
+    }
+
+    private void EditUser(UserDto user)
+    {
+        EditingUserId = user.Id;
+        FormUser = new RegisterRequest
+        {
+            Nom = user.Nom,
+            Email = user.Email,
+            Role = user.Role,
+            MotDePasse = ""
+        };
+        ShowForm = true;
+    }
+
+    private void CancelForm()
+    {
+        ShowForm = false;
+        EditingUserId = 0;
+    }
+
+    private async Task SaveUser()
+    {
+        if (string.IsNullOrWhiteSpace(FormUser.Nom) || string.IsNullOrWhiteSpace(FormUser.Email))
+        {
+            await Dialog.ShowWarningAsync("Veuillez remplir le nom et l'email.");
+            return;
+        }
+
+        if (EditingUserId == 0 && string.IsNullOrWhiteSpace(FormUser.MotDePasse))
+        {
+            await Dialog.ShowWarningAsync("Veuillez saisir un mot de passe pour le nouveau collaborateur.");
+            return;
+        }
+
+        try
+        {
+            bool success;
+            var isNew = EditingUserId == 0;
+
+            if (isNew)
+            {
+                success = await UserService.RegisterAsync(FormUser);
+            }
+            else
+            {
+                success = await UserService.UpdateAsync(EditingUserId, new UpdateUserRequest
+                {
+                    Nom = FormUser.Nom,
+                    Email = FormUser.Email,
+                    Role = FormUser.Role,
+                    MotDePasse = string.IsNullOrWhiteSpace(FormUser.MotDePasse) ? null : FormUser.MotDePasse
+                });
+            }
+
+            if (success)
+            {
+                ShowForm = false;
+                EditingUserId = 0;
+                await LoadData();
+                await Dialog.ShowSuccessAsync(isNew
+                    ? "Collaborateur créé avec succès."
+                    : "Collaborateur modifié avec succès.");
+            }
+            else
+            {
+                await Dialog.ShowErrorAsync("Erreur lors de l'enregistrement du collaborateur.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await Dialog.ShowErrorAsync("Erreur: " + ex.Message);
+        }
+    }
+
+    private async Task DeleteUser(UserDto user)
+    {
+        if (user.Nom == AuthService.UserName)
+        {
+            await Dialog.ShowWarningAsync("Vous ne pouvez pas supprimer votre propre compte.");
+            return;
+        }
+
+        var confirm = await Dialog.ShowConfirmAsync($"Voulez-vous vraiment supprimer {user.Nom} ?");
+        if (!confirm) return;
+
+        try
+        {
+            var success = await UserService.DeleteAsync(user.Id);
+            if (success)
+            {
+                await LoadData();
+                await Dialog.ShowSuccessAsync("Collaborateur supprimé.");
+            }
+            else
+            {
+                await Dialog.ShowErrorAsync("Impossible de supprimer ce collaborateur. Il est peut-être lié à un chauffeur.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await Dialog.ShowErrorAsync("Erreur: " + ex.Message);
+        }
+    }
+
+    private string GetRoleBadgeClass(string role)
+    {
+        return role switch
+        {
+            "Administrateur" => "bg-navy",
+            "Gestionnaire" => "bg-steel",
+            _ => "bg-secondary"
+        };
+    }
+}

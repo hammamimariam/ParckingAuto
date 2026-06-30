@@ -1,0 +1,141 @@
+@page "/alertes"
+@using ParckingAuto.DTO
+@inject HttpClient Http
+@inject DialogService Dialog
+
+<div class="container mt-4 animate-fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="title-custom mb-0"><i class="bi bi-bell-fill text-red me-2 animate-bell"></i>Système d'Alertes</h2>
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="showResolved" @bind="ShowResolues" @bind:after="LoadData" />
+            <label class="form-check-label" for="showResolved">Afficher les alertes traitées</label>
+        </div>
+    </div>
+
+    @if (alertes == null)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Vérification de l'état du parc et calcul des alertes...</p>
+        </div>
+    }
+    else if (!alertes.Any())
+    {
+        <div class="card card-custom p-5 text-center shadow-sm">
+            <i class="bi bi-check-circle text-success fs-1 mb-3"></i>
+            <h4 class="text-success">Tout est en ordre !</h4>
+            <p class="text-muted">Aucune alerte en cours.</p>
+        </div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var a in alertes.OrderByDescending(al => al.Statut == "Critique").ThenBy(al => al.Statut == "Resolue"))
+            {
+                var isCritical = a.Statut == "Critique";
+                var isResolved = a.Statut == "Resolue";
+                <div class="col-12">
+                    <div class="card card-custom shadow-sm border-start-custom @(isResolved ? "border-resolved" : isCritical ? "border-critical" : "border-warning-custom")">
+                        <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                                    <span class="badge @(isResolved ? "bg-success" : isCritical ? "bg-red" : "bg-warning-custom") text-white">
+                                        @(isResolved ? "Traitée" : isCritical ? "Critique" : "Pré-alerte")
+                                    </span>
+                                    <span class="badge bg-navy">Véhicule: @a.VehiculeImmatriculation</span>
+                                    <span class="text-muted small"><i class="bi bi-tag me-1"></i>@TranslateType(a.TypeAlerte)</span>
+                                </div>
+                                <h5 class="mb-0 text-navy mt-2">@a.Message</h5>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="text-end">
+                                    <small class="text-muted d-block mb-1">@(isResolved ? "Date de traitement" : "Date d'échéance")</small>
+                                    <span class="badge @(isResolved ? "bg-success" : isCritical ? "bg-red" : "bg-outline-navy")">
+                                        <i class="bi bi-calendar-event me-1"></i>@((isResolved ? a.DateResolution : a.DateAlerte)?.ToString("dd/MM/yyyy"))
+                                    </span>
+                                </div>
+                                @if (!isResolved)
+                                {
+                                    <button class="btn btn-sm btn-custom-success text-nowrap" @onclick="() => MarquerTraitee(a.Id)" title="Marquer comme traitée">
+                                        <i class="bi bi-check2-circle me-1"></i>Marquer traitée
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .border-start-custom { border-left: 5px solid !important; }
+    .border-critical { border-left-color: #C1121F !important; background-color: rgba(193, 18, 31, 0.03); }
+    .border-warning-custom { border-left-color: #669BBC !important; background-color: rgba(102, 155, 188, 0.03); }
+    .border-resolved { border-left-color: #198754 !important; background-color: rgba(25, 135, 84, 0.04); opacity: 0.85; }
+    .bg-warning-custom { background-color: #669BBC; }
+    .animate-bell { display: inline-block; animation: ring 2s infinite ease-in-out; }
+    @@keyframes ring {
+        0% { transform: rotate(0); }
+        5% { transform: rotate(15deg); }
+        10% { transform: rotate(-15deg); }
+        15% { transform: rotate(10deg); }
+        20% { transform: rotate(-10deg); }
+        25% { transform: rotate(0); }
+        100% { transform: rotate(0); }
+    }
+</style>
+
+@code {
+    private List<AlerteDto>? alertes;
+    private bool ShowResolues;
+
+    protected override async Task OnInitializedAsync() => await LoadData();
+
+    private async Task LoadData()
+    {
+        try
+        {
+            var url = ShowResolues ? "Alertes?includeResolues=true" : "Alertes";
+            alertes = await Http.GetFromJsonAsync<List<AlerteDto>>(url);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error loading alerts: " + ex.Message);
+        }
+    }
+
+    private async Task MarquerTraitee(int id)
+    {
+        var confirm = await Dialog.ShowConfirmAsync("Confirmer que l'action demandée par cette alerte a bien été effectuée ?\n\nExemple : vidange faite, assurance renouvelée, visite technique passée...");
+        if (!confirm) return;
+
+        try
+        {
+            var response = await Http.PutAsync($"Alertes/{id}/resoudre", null);
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadData();
+                await Dialog.ShowAlertAsync("Alerte marquée comme traitée.");
+            }
+            else
+            {
+                await Dialog.ShowErrorAsync("Impossible de mettre à jour l'alerte.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await Dialog.ShowErrorAsync("Erreur : " + ex.Message);
+        }
+    }
+
+    private static string TranslateType(string type) => type switch
+    {
+        "Vidange" => "Vidange Kilométrique",
+        "Assurance" => "Expiration Assurance",
+        "VisiteTechnique" => "Visite Technique",
+        "PermisChauffeur" => "Expiration Permis Chauffeur",
+        _ => type
+    };
+}

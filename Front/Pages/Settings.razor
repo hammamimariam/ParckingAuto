@@ -1,0 +1,73 @@
+@page "/settings"
+@using ParckingAuto.DTO
+@inject HttpClient Http
+
+<h3 class="title-custom">Paramètres généraux</h3>
+
+<div class="card card-custom p-4" style="max-width:600px;">
+    <h5 class="text-navy mb-3">Notifications d'alertes (CDC)</h5>
+    <div class="form-check mb-2">
+        <input type="checkbox" class="form-check-input" id="notifVidange" @bind="NotifVidange" />
+        <label class="form-check-label" for="notifVidange">Alerte vidange (9 000 / 10 000 km)</label>
+    </div>
+    <div class="form-check mb-2">
+        <input type="checkbox" class="form-check-input" id="notifAssurance" @bind="NotifAssurance" />
+        <label class="form-check-label" for="notifAssurance">Alerte assurance (J-30, J-15, J-7)</label>
+    </div>
+    <div class="form-check mb-2">
+        <input type="checkbox" class="form-check-input" id="notifVisiteTech" @bind="NotifVisiteTech" />
+        <label class="form-check-label" for="notifVisiteTech">Alerte visite technique (J-30, J-15, J-7)</label>
+    </div>
+    <div class="form-check mb-3">
+        <input type="checkbox" class="form-check-input" id="notifPermis" @bind="NotifPermis" />
+        <label class="form-check-label" for="notifPermis">Alerte permis chauffeur</label>
+    </div>
+
+    <button class="btn btn-custom-success" @onclick="SaveSettings">Enregistrer</button>
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <div class="alert alert-info mt-3 mb-0">@Message</div>
+    }
+</div>
+
+@code {
+    private bool NotifVidange = true;
+    private bool NotifAssurance = true;
+    private bool NotifVisiteTech = true;
+    private bool NotifPermis = true;
+    private string Message = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var settings = await Http.GetFromJsonAsync<ParametresDto>("Settings");
+            if (settings != null)
+            {
+                NotifVidange = settings.NotifVidange;
+                NotifAssurance = settings.NotifAssurance;
+                NotifVisiteTech = settings.NotifVisiteTech;
+                NotifPermis = settings.NotifPermis;
+            }
+        }
+        catch (Exception ex)
+        {
+            Message = "Erreur chargement : " + ex.Message;
+        }
+    }
+
+    private async Task SaveSettings()
+    {
+        var response = await Http.PutAsJsonAsync("Settings/update", new ParametresDto
+        {
+            NotifVidange = NotifVidange,
+            NotifAssurance = NotifAssurance,
+            NotifVisiteTech = NotifVisiteTech,
+            NotifPermis = NotifPermis
+        });
+
+        Message = response.IsSuccessStatusCode
+            ? "Paramètres enregistrés."
+            : "Erreur lors de l'enregistrement.";
+    }
+}

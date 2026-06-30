@@ -1,0 +1,139 @@
+@page "/login"
+@layout EmptyLayout
+@using ParckingAuto.DTO
+@inject AuthService AuthService
+@inject NavigationManager Nav
+@inject HttpClient Http
+
+<div class="login-page">
+    <div class="login-card animate-fade-in">
+        <div class="login-brand text-center">
+            <img src="logo.png" alt="ParckingAuto" class="login-logo" />
+            <h1 class="login-app-name">ParckingAuto</h1>
+            <p class="login-tagline">Gestion de parc automobile</p>
+        </div>
+
+        <h2 class="login-heading">
+            @(ShowReset ? "Réinitialisation" : "Connexion")
+        </h2>
+
+        @if (!ShowReset)
+        {
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input @bind="Email" class="form-control" placeholder="admin@parc.com" />
+            </div>
+            <div class="mb-4">
+                <label class="form-label">Mot de passe</label>
+                <input @bind="Password" type="password" class="form-control" placeholder="••••••••" />
+            </div>
+            <button class="btn btn-custom-primary w-100 login-btn" @onclick="LoginUser" disabled="@IsLoading">
+                @(IsLoading ? "Connexion..." : "Se connecter")
+            </button>
+            <button class="btn btn-link login-forgot w-100 mt-3" @onclick="() => { ShowReset = true; ClearMessages(); }">
+                Mot de passe oublié ?
+            </button>
+        }
+        else
+        {
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input @bind="ResetEmail" class="form-control" placeholder="votre@email.com" />
+            </div>
+            <div class="mb-4">
+                <label class="form-label">Nouveau mot de passe</label>
+                <input @bind="NewPassword" type="password" class="form-control" placeholder="••••••••" />
+            </div>
+            <button class="btn btn-custom-success w-100 login-btn" @onclick="ResetPassword" disabled="@IsLoading">
+                @(IsLoading ? "Traitement..." : "Réinitialiser")
+            </button>
+            <button class="btn btn-link login-forgot w-100 mt-3" @onclick="() => { ShowReset = false; ClearMessages(); }">
+                Retour à la connexion
+            </button>
+        }
+
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <div class="alert alert-danger login-alert mt-4 mb-0">@ErrorMessage</div>
+        }
+        @if (!string.IsNullOrEmpty(SuccessMessage))
+        {
+            <div class="alert alert-success login-alert mt-4 mb-0">@SuccessMessage</div>
+        }
+    </div>
+</div>
+
+@code {
+    private string Email = "";
+    private string Password = "";
+    private string ResetEmail = "";
+    private string NewPassword = "";
+    private string ErrorMessage = "";
+    private string SuccessMessage = "";
+    private bool ShowReset;
+    private bool IsLoading;
+
+    private async Task LoginUser()
+    {
+        IsLoading = true;
+        ClearMessages();
+
+        try
+        {
+            var result = await AuthService.LoginAsync(Email, Password);
+            if (result.Success)
+            {
+                switch (result.Role)
+                {
+                    case "Administrateur": Nav.NavigateTo("/dashboard"); break;
+                    case "Gestionnaire": Nav.NavigateTo("/dashboard"); break;
+                    case "Chauffeur": Nav.NavigateTo("/mouvements"); break;
+                    default: Nav.NavigateTo("/"); break;
+                }
+            }
+            else
+            {
+                ErrorMessage = "Email ou mot de passe incorrect";
+            }
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task ResetPassword()
+    {
+        IsLoading = true;
+        ClearMessages();
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("Auth/reset-password", new ResetPasswordRequest
+            {
+                Email = ResetEmail,
+                NewPassword = NewPassword
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                SuccessMessage = "Mot de passe réinitialisé. Vous pouvez vous connecter.";
+                ShowReset = false;
+            }
+            else
+            {
+                ErrorMessage = "Réinitialisation impossible. Vérifiez l'email.";
+            }
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void ClearMessages()
+    {
+        ErrorMessage = "";
+        SuccessMessage = "";
+    }
+}

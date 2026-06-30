@@ -1,0 +1,264 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --navy: #003049;
+    --steel: #669BBC;
+    --cream: #FDF0D5;
+    --red: #C1121F;
+    --maroon: #780000;
+}
+
+html, body {
+    font-family: 'Outfit', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #FAF6EE !important; /* Slightly lighter version of FDF0D5 for cleaner body background */
+    color: var(--navy);
+}
+
+a, .btn-link {
+    color: var(--steel);
+    text-decoration: none;
+    transition: color 0.2s ease-in-out;
+}
+
+a:hover, .btn-link:hover {
+    color: var(--navy);
+}
+
+/* Custom Headers */
+.title-custom {
+    color: var(--navy);
+    font-weight: 700;
+    position: relative;
+    padding-bottom: 8px;
+}
+
+.title-custom::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 60px;
+    height: 4px;
+    background: var(--steel);
+    border-radius: 2px;
+}
+
+/* Buttons */
+.btn-custom-primary {
+    background-color: var(--navy);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    padding: 8px 18px;
+    transition: all 0.25s ease-in-out;
+}
+.btn-custom-primary:hover {
+    background-color: var(--steel);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 155, 188, 0.3);
+}
+
+.btn-custom-success {
+    background-color: var(--steel);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    padding: 8px 18px;
+    transition: all 0.25s ease-in-out;
+}
+.btn-custom-success:hover {
+    background-color: var(--navy);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 48, 73, 0.3);
+}
+
+.btn-custom-danger {
+    background-color: var(--red);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    padding: 8px 18px;
+    transition: all 0.25s ease-in-out;
+}
+.btn-custom-danger:hover {
+    background-color: var(--maroon);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(120, 0, 0, 0.3);
+}
+
+.btn-outline-navy {
+    border: 1px solid var(--navy);
+    color: var(--navy);
+    transition: all 0.2s ease;
+}
+.btn-outline-navy:hover {
+    background-color: var(--navy);
+    color: white;
+}
+
+/* Cards */
+.card-custom {
+    background: white;
+    border: 1px solid rgba(0, 48, 73, 0.08);
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0, 48, 73, 0.03);
+    transition: all 0.25s ease;
+}
+
+.card-hover-effect:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 24px rgba(0, 48, 73, 0.1) !important;
+}
+
+/* Tables */
+.table-custom {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 48, 73, 0.02);
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table-custom th {
+    background-color: var(--navy) !important;
+    color: white !important;
+    font-weight: 600;
+    padding: 14px;
+    border: none;
+}
+
+.table-custom td {
+    padding: 14px;
+    border-bottom: 1px solid rgba(0, 48, 73, 0.05);
+    vertical-align: middle;
+}
+
+.table-custom tr:last-child td {
+    border-bottom: none;
+}
+
+.table-custom tr:hover td {
+    background-color: rgba(253, 240, 213, 0.25) !important; /* Soft hover effect with cream */
+}
+
+/* Forms */
+.form-control, .form-select {
+    border: 1px solid rgba(0, 48, 73, 0.15);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: var(--navy);
+    background-color: #FCFBF9;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--steel);
+    box-shadow: 0 0 0 3px rgba(102, 155, 188, 0.2);
+    outline: none;
+}
+
+/* Colors & Badges */
+.bg-navy { background-color: var(--navy) !important; color: white !important; }
+
+.plate-number {
+    display: inline-block;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.06em;
+    color: var(--navy);
+    background-color: #fff;
+    border: 2px solid var(--navy);
+    border-radius: 5px;
+    padding: 5px 12px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+.bg-steel { background-color: var(--steel) !important; color: white !important; }
+.bg-red { background-color: var(--red) !important; color: white !important; }
+.bg-maroon { background-color: var(--maroon) !important; color: white !important; }
+.text-navy { color: var(--navy) !important; }
+.text-steel { color: var(--steel) !important; }
+.text-red { color: var(--red) !important; }
+.text-bold { font-weight: 600; }
+.link-custom {
+    color: var(--steel);
+    font-weight: 500;
+    text-decoration: underline;
+}
+
+/* Layout shell — global styles (stable on refresh) */
+.app-shell {
+    min-height: 100vh;
+}
+
+.sidebar-custom {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 250px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    z-index: 200;
+    background-color: #f8f9fa;
+    border-right: 1px solid rgba(0, 48, 73, 0.1);
+    flex-shrink: 0;
+}
+
+.main-content {
+    margin-left: 250px;
+    background-color: #FAF6EE;
+    min-height: 100vh;
+    width: calc(100% - 250px);
+}
+
+.app-navbar {
+    background-color: #fff;
+    border-bottom: 1px solid rgba(0, 48, 73, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+/* Animations */
+.animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-slide-down {
+    animation: slideDown 0.3s ease-out forwards;
+}
+
+@@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#blazor-error-ui {
+    background: var(--cream);
+    color: var(--navy);
+    box-shadow: 0 -3px 15px rgba(0, 0, 0, 0.15);
+}

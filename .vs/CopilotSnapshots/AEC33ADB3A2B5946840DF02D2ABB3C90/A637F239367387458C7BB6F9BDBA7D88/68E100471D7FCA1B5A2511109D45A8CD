@@ -1,0 +1,13 @@
+﻿using System;
+
+namespace ParckingAuto.DTO
+{
+    public class MaintenanceDto
+    {
+        public int Id { get; set; }
+        public int VehiculeId { get; set; }
+        public string TypeIntervention { get; set; } = string.Empty;
+        public DateTime DateIntervention { get; set; }
+        public decimal Cout { get; set; }
+    }
+}

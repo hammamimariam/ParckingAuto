@@ -1,0 +1,334 @@
+@page "/mouvements"
+@using ParckingAuto.DTO
+@inject HttpClient Http
+@inject DialogService Dialog
+@inject NavigationManager Navigation
+
+<div class="container mt-4 animate-fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="title-custom"><i class="bi bi-arrow-left-right me-2"></i>Mouvements de Parking</h2>
+        <button class="btn btn-custom-primary" @onclick="ShowDepartureForm">
+            <i class="bi bi-box-arrow-right me-1"></i> Enregistrer une Sortie
+        </button>
+    </div>
+
+    @if (ShowDepForm)
+    {
+        <div class="card card-custom p-4 mb-4 animate-slide-down">
+            <h4 class="mb-3 text-navy">Enregistrer un départ de véhicule</h4>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Véhicule</label>
+                    <select class="form-select" @bind="NewMvt.VehiculeId" @bind:after="OnVehiculeSelected">
+                        <option value="0">-- Choisir un véhicule --</option>
+                        @foreach (var v in VehiclesDisponibles)
+                        {
+                            <option value="@v.Id">@v.Marque @v.Modele - @v.Immatriculation</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Chauffeur associé</label>
+                    <select class="form-select" @bind="NewMvt.ChauffeurId">
+                        <option value="0">-- Choisir un chauffeur --</option>
+                        @foreach (var c in ChauffeursDisponibles)
+                        {
+                            <option value="@c.Id">@c.Prenom @c.Nom</option>
+                        }
+                    </select>
+                    @if (!ChauffeursDisponibles.Any())
+                    {
+                        <small class="text-danger">Aucun chauffeur disponible. Ajoutez-en depuis la page Chauffeurs.</small>
+                    }
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Kilométrage de départ</label>
+                    <input type="number" class="form-control" @bind="NewMvt.KmDepart" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Date et heure de départ</label>
+                    <input type="datetime-local" class="form-control" @bind="NewMvt.DateDepart" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Destination</label>
+                    <input class="form-control" @bind="NewMvt.Destination" placeholder="Lieu de destination" />
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-outline-secondary" @onclick="CancelForms">Annuler</button>
+                <button class="btn btn-custom-success" @onclick="SaveDeparture">
+                    <i class="bi bi-check-circle me-1"></i> Valider la Sortie
+                </button>
+            </div>
+        </div>
+    }
+
+    @if (ShowRetForm)
+    {
+        <div class="card card-custom p-4 mb-4 animate-slide-down">
+            <h4 class="mb-3 text-navy">Enregistrer le retour de mission</h4>
+            <p class="text-muted">Enregistrement pour le véhicule <strong>@SelectedMvt.VehiculeImmatriculation</strong> conduit par <strong>@SelectedMvt.ChauffeurNomComplet</strong> (Départ : @SelectedMvt.KmDepart km).</p>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Kilométrage de retour</label>
+                    <input type="number" class="form-control" @bind="KmRetourVal" min="@SelectedMvt.KmDepart" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Date et heure de retour</label>
+                    <input type="datetime-local" class="form-control" @bind="DateRetourVal" />
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-outline-secondary" @onclick="CancelForms">Annuler</button>
+                <button class="btn btn-custom-danger" @onclick="SaveReturn">
+                    <i class="bi bi-box-arrow-in-left me-1"></i> Valider le Retour
+                </button>
+            </div>
+        </div>
+    }
+
+    @if (mouvementsList == null)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Chargement des mouvements...</p>
+        </div>
+    }
+    else if (!mouvementsList.Any())
+    {
+        <div class="alert alert-info text-center">Aucun mouvement de parking enregistré.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-custom">
+                <thead>
+                    <tr>
+                        <th>Véhicule</th>
+                        <th>Chauffeur</th>
+                        <th>Départ</th>
+                        <th>Retour</th>
+                        <th>Kms Parcourus</th>
+                        <th>Destination</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in mouvementsList)
+                    {
+                        var isActive = m.DateRetour == null;
+                        <tr>
+                            <td>
+                                <span class="badge bg-navy">@m.VehiculeImmatriculation</span>
+                            </td>
+                            <td><strong>@m.ChauffeurNomComplet</strong></td>
+                            <td>
+                                <div class="small"><i class="bi bi-calendar-event me-1"></i>@m.DateDepart.ToString("dd/MM/yyyy HH:mm")</div>
+                                <div class="small text-muted"><i class="bi bi-speedometer2 me-1"></i>@m.KmDepart km</div>
+                            </td>
+                            <td>
+                                @if (isActive)
+                                {
+                                    <span class="badge bg-warning text-dark"><i class="spinner-grow spinner-grow-sm me-1" role="status"></i>En mission</span>
+                                }
+                                else
+                                {
+                                    <div class="small"><i class="bi bi-calendar-check me-1"></i>@m.DateRetour?.ToString("dd/MM/yyyy HH:mm")</div>
+                                    <div class="small text-muted"><i class="bi bi-speedometer2 me-1"></i>@m.KmRetour km</div>
+                                }
+                            </td>
+                            <td>
+                                @if (!isActive)
+                                {
+                                    <span class="text-bold">@(m.KmRetour - m.KmDepart) km</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted"><i class="bi bi-dash-lg"></i></span>
+                                }
+                            </td>
+                            <td>@m.Destination</td>
+                            <td class="text-end">
+                                @if (isActive)
+                                {
+                                    <button class="btn btn-sm btn-custom-danger" @onclick="() => ShowReturnForm(m)">
+                                        <i class="bi bi-box-arrow-in-left me-1"></i> Retour
+                                    </button>
+                                }
+                                else
+                                {
+                                    <span class="text-success"><i class="bi bi-check-all fs-4"></i> Terminée</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<MouvementDto> mouvementsList;
+    private List<VehiculeDto> Vehicles = new();
+    private IEnumerable<VehiculeDto> VehiclesDisponibles => Vehicles.Where(v => v.Statut != "En mission");
+    private List<ChauffeurDto> Chauffeurs = new();
+    private IEnumerable<ChauffeurDto> ChauffeursDisponibles =>
+        Chauffeurs.Where(c => c.Statut == "Disponible");
+
+    private MouvementDto NewMvt = new() { DateDepart = DateTime.Now };
+    private MouvementDto SelectedMvt;
+
+    private bool ShowDepForm = false;
+    private bool ShowRetForm = false;
+
+    private int KmRetourVal = 0;
+    private DateTime DateRetourVal = DateTime.Now;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            mouvementsList = await Http.GetFromJsonAsync<List<MouvementDto>>("Mouvements") ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error loading movements: " + ex.Message);
+            mouvementsList = new();
+        }
+
+        try
+        {
+            Vehicles = await Http.GetFromJsonAsync<List<VehiculeDto>>("Vehicules") ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error loading vehicles: " + ex.Message);
+            Vehicles = new();
+        }
+
+        try
+        {
+            Chauffeurs = await Http.GetFromJsonAsync<List<ChauffeurDto>>("Chauffeurs") ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error loading chauffeurs: " + ex.Message);
+            Chauffeurs = new();
+        }
+    }
+
+    private void ShowDepartureForm()
+    {
+        NewMvt = new MouvementDto 
+        { 
+            DateDepart = DateTime.Now,
+            VehiculeId = VehiclesDisponibles.FirstOrDefault()?.Id ?? 0,
+            ChauffeurId = ChauffeursDisponibles.FirstOrDefault()?.Id ?? 0
+        };
+        OnVehiculeSelected();
+        ShowRetForm = false;
+        ShowDepForm = true;
+    }
+
+    private void OnVehiculeSelected()
+    {
+        var veh = Vehicles.FirstOrDefault(v => v.Id == NewMvt.VehiculeId);
+        if (veh != null)
+        {
+            NewMvt.KmDepart = veh.Kilometrage;
+        }
+    }
+
+    private void ShowReturnForm(MouvementDto m)
+    {
+        SelectedMvt = m;
+        KmRetourVal = m.KmDepart + 10; // Default estimate
+        DateRetourVal = DateTime.Now;
+        ShowDepForm = false;
+        ShowRetForm = true;
+    }
+
+    private void CancelForms()
+    {
+        ShowDepForm = false;
+        ShowRetForm = false;
+    }
+
+    private async Task SaveDeparture()
+    {
+        if (NewMvt.VehiculeId == 0 || NewMvt.ChauffeurId == 0)
+        {
+            await Dialog.ShowWarningAsync("Veuillez choisir un véhicule et un chauffeur.");
+            return;
+        }
+
+        if (NewMvt.KmDepart <= 0)
+        {
+            await Dialog.ShowWarningAsync("Veuillez entrer un kilométrage de départ valide.");
+            return;
+        }
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("Mouvements", NewMvt);
+            if (response.IsSuccessStatusCode)
+            {
+                ShowDepForm = false;
+                await LoadData();
+                await Dialog.ShowAlertAsync("Départ enregistré avec succès.");
+            }
+            else
+            {
+                await Dialog.ShowErrorAsync("Erreur lors du départ. Le véhicule est peut-être déjà en mission.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await Dialog.ShowErrorAsync(ex.Message);
+        }
+    }
+
+    private async Task SaveReturn()
+    {
+        if (KmRetourVal < SelectedMvt.KmDepart)
+        {
+            await Dialog.ShowWarningAsync($"Le kilométrage de retour ne peut pas être inférieur à celui du départ ({SelectedMvt.KmDepart} km).");
+            return;
+        }
+
+        SelectedMvt.DateRetour = DateRetourVal;
+        SelectedMvt.KmRetour = KmRetourVal;
+
+        try
+        {
+            var response = await Http.PutAsJsonAsync($"Mouvements/{SelectedMvt.Id}", SelectedMvt);
+            if (response.IsSuccessStatusCode)
+            {
+                ShowRetForm = false;
+                await LoadData();
+                await Dialog.ShowAlertAsync("Retour enregistré. Kilométrage du véhicule mis à jour automatiquement.");
+            }
+            else
+            {
+                var err = await response.Content.ReadAsStringAsync();
+                await Dialog.ShowErrorAsync(string.IsNullOrWhiteSpace(err) ? "Erreur lors de l'enregistrement du retour." : err);
+            }
+        }
+        catch (Exception ex)
+        {
+            await Dialog.ShowErrorAsync(ex.Message);
+        }
+    }
+}

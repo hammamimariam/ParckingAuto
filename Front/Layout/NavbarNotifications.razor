@@ -1,0 +1,120 @@
+@using ParckingAuto.DTO
+@inject HttpClient Http
+@inject AuthService AuthService
+@inject NavigationManager Nav
+
+@if (ShowBell)
+{
+    <div class="dropdown">
+        <button class="btn btn-notif position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false" @onclick="LoadAlertsAsync" title="Notifications">
+            <i class="bi bi-bell-fill"></i>
+            @if (CriticalCount > 0)
+            {
+                <span class="notif-badge notif-badge-critical">@CriticalCount</span>
+            }
+            else if (AlertCount > 0)
+            {
+                <span class="notif-badge">@AlertCount</span>
+            }
+        </button>
+
+        <div class="dropdown-menu dropdown-menu-end notif-dropdown shadow">
+            <div class="notif-dropdown-header">
+                <span class="fw-bold text-navy">Notifications</span>
+                @if (AlertCount > 0)
+                {
+                    <span class="badge bg-red">@AlertCount</span>
+                }
+            </div>
+
+            @if (IsLoading)
+            {
+                <div class="notif-empty">
+                    <div class="spinner-border spinner-border-sm text-steel" role="status"></div>
+                </div>
+            }
+            else if (RecentAlerts.Count == 0)
+            {
+                <div class="notif-empty">
+                    <i class="bi bi-check-circle text-success fs-4"></i>
+                    <p class="mb-0 mt-2 text-muted small">Aucune alerte en cours</p>
+                </div>
+            }
+            else
+            {
+                @foreach (var alert in RecentAlerts)
+                {
+                    <button type="button" class="notif-item @(alert.Statut == "Critique" ? "notif-critical" : "")" @onclick="() => GoToAlerts()">
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                            <strong class="small">@TranslateType(alert.TypeAlerte)</strong>
+                            <span class="badge @(alert.Statut == "Critique" ? "bg-red" : "bg-steel")" style="font-size:0.65rem">
+                                @(alert.Statut == "Critique" ? "Critique" : "Alerte")
+                            </span>
+                        </div>
+                        <div class="small text-muted">@alert.VehiculeImmatriculation</div>
+                        <div class="small text-navy mt-1">@alert.Message</div>
+                    </button>
+                }
+            }
+
+            <div class="notif-dropdown-footer">
+                <a href="/alertes" class="btn btn-sm btn-custom-primary w-100">Voir toutes les alertes</a>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<AlerteDto> RecentAlerts = new();
+    private bool IsLoading;
+    private int AlertCount;
+    private int CriticalCount;
+
+    private bool ShowBell =>
+        AuthService.Role is "Administrateur" or "Gestionnaire";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (ShowBell)
+            await LoadAlertsAsync();
+    }
+
+    private async Task LoadAlertsAsync()
+    {
+        if (!ShowBell) return;
+
+        IsLoading = true;
+        try
+        {
+            var alertes = await Http.GetFromJsonAsync<List<AlerteDto>>("Alertes") ?? new();
+            AlertCount = alertes.Count;
+            CriticalCount = alertes.Count(a => a.Statut == "Critique");
+            RecentAlerts = alertes
+                .OrderByDescending(a => a.Statut == "Critique")
+                .ThenByDescending(a => a.DateAlerte)
+                .Take(5)
+                .ToList();
+        }
+        catch
+        {
+            RecentAlerts = new();
+            AlertCount = 0;
+            CriticalCount = 0;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void GoToAlerts() => Nav.NavigateTo("/alertes");
+
+    private static string TranslateType(string type) => type switch
+    {
+        "Vidange" => "Vidange",
+        "Assurance" => "Assurance",
+        "VisiteTechnique" => "Visite technique",
+        "PermisChauffeur" => "Permis chauffeur",
+        _ => type
+    };
+}

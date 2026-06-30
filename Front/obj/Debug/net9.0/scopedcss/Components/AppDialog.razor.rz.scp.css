@@ -1,0 +1,76 @@
+.app-dialog-backdrop[b-nvv0g9k74m] {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 48, 73, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 1rem;
+}
+
+.app-dialog[b-nvv0g9k74m] {
+    width: 100%;
+    max-width: 420px;
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid rgba(0, 48, 73, 0.1);
+    box-shadow: 0 20px 50px rgba(0, 48, 73, 0.2);
+    padding: 1.75rem 1.5rem 1.5rem;
+    text-align: center;
+}
+
+.app-dialog-icon[b-nvv0g9k74m] {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    margin-bottom: 1rem;
+}
+
+.dialog-info[b-nvv0g9k74m] {
+    background: rgba(102, 155, 188, 0.15);
+    color: #003049;
+}
+
+.dialog-success[b-nvv0g9k74m] {
+    background: rgba(102, 155, 188, 0.2);
+    color: #003049;
+}
+
+.dialog-warning[b-nvv0g9k74m] {
+    background: rgba(253, 240, 213, 0.9);
+    color: #780000;
+}
+
+.dialog-error[b-nvv0g9k74m] {
+    background: rgba(193, 18, 31, 0.12);
+    color: #C1121F;
+}
+
+.app-dialog-title[b-nvv0g9k74m] {
+    color: #003049;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+}
+
+.app-dialog-message[b-nvv0g9k74m] {
+    color: #003049;
+    margin-bottom: 1.5rem;
+    white-space: pre-line;
+    line-height: 1.5;
+}
+
+.app-dialog-actions[b-nvv0g9k74m] {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.app-dialog-actions .btn[b-nvv0g9k74m] {
+    min-width: 110px;
+}

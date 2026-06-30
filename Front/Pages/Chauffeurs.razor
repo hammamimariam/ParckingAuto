@@ -1,0 +1,293 @@
+@page "/chauffeurs"
+@using ParckingAuto.DTO
+@inject HttpClient Http
+@inject DialogService Dialog
+
+<div class="container mt-4 animate-fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="title-custom"><i class="bi bi-person-badge me-2"></i>Gestion des Chauffeurs</h2>
+        <button class="btn btn-custom-primary" @onclick="ShowAddForm">
+            <i class="bi bi-plus-circle me-1"></i> Ajouter un Chauffeur
+        </button>
+    </div>
+
+    @if (ShowForm)
+    {
+        <div class="card card-custom p-4 mb-4 animate-slide-down">
+            <h4 class="mb-3 text-navy">@(CurrentChauffeur.Id == 0 ? "Ajouter un Chauffeur" : "Modifier le Chauffeur")</h4>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Nom</label>
+                    <input class="form-control" @bind="CurrentChauffeur.Nom" placeholder="Nom de famille" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Prénom</label>
+                    <input class="form-control" @bind="CurrentChauffeur.Prenom" placeholder="Prénom" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Téléphone</label>
+                    <input class="form-control" @bind="CurrentChauffeur.Telephone" placeholder="+216 XX XXX XXX" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Statut</label>
+                    <select class="form-select" @bind="CurrentChauffeur.Statut">
+                        <option value="Disponible">Disponible</option>
+                        <option value="EnMission">En mission</option>
+                        <option value="Indisponible">Indisponible</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Numéro de Permis</label>
+                    <input class="form-control" @bind="CurrentChauffeur.PermisNumero" placeholder="Ex: 24/123456" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Date d'expiration du Permis</label>
+                    <input type="date" class="form-control" @bind="CurrentChauffeur.PermisExpiration" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Email de connexion</label>
+                    <input type="email" class="form-control" @bind="CurrentChauffeur.Email" placeholder="Ex: mohamed.benali@parc.com" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Mot de passe</label>
+                    <input type="password" class="form-control" @bind="CurrentChauffeur.MotDePasse"
+                           placeholder="@(CurrentChauffeur.Id == 0 ? "Mot de passe de connexion" : "Laisser vide pour ne pas changer")" />
+                </div>
+            </div>
+            <p class="text-muted small mb-3">
+                <i class="bi bi-info-circle me-1"></i>
+                Un compte utilisateur avec le rôle <strong>Chauffeur</strong> sera créé automatiquement dans la liste des collaborateurs.
+            </p>
+
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-outline-secondary" @onclick="CancelForm">Annuler</button>
+                <button class="btn btn-custom-success" @onclick="SaveChauffeur">
+                    <i class="bi bi-save me-1"></i> Enregistrer
+                </button>
+            </div>
+        </div>
+    }
+
+    @if (chauffeursList == null)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Chargement des chauffeurs...</p>
+        </div>
+    }
+    else if (!chauffeursList.Any())
+    {
+        <div class="alert alert-info text-center">Aucun chauffeur enregistré.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-custom">
+                <thead>
+                    <tr>
+                        <th>Nom & Prénom</th>
+                        <th>Email</th>
+                        <th>Téléphone</th>
+                        <th>N° Permis</th>
+                        <th>Statut</th>
+                        <th>Échéance Permis</th>
+                        <th>Statut Permis</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in chauffeursList)
+                    {
+                        var remainingDays = (c.PermisExpiration.Date - DateTime.Today).Days;
+                        var isExpired = remainingDays < 0;
+                        var isWarning = remainingDays >= 0 && remainingDays <= 30;
+
+                        <tr>
+                            <td>
+                                <div class="text-bold text-navy">@c.Prenom @c.Nom</div>
+                            </td>
+                            <td>@(string.IsNullOrWhiteSpace(c.Email) ? "—" : c.Email)</td>
+                            <td>@c.Telephone</td>
+                            <td>@c.PermisNumero</td>
+                            <td><span class="badge bg-steel">@FormatStatut(c.Statut)</span></td>
+                            <td>@c.PermisExpiration.ToString("dd/MM/yyyy")</td>
+                            <td>
+                                @if (isExpired)
+                                {
+                                    <span class="badge bg-red"><i class="bi bi-x-circle me-1"></i>Expiré (depuis @Math.Abs(remainingDays) jours)</span>
+                                }
+                                else if (isWarning)
+                                {
+                                    <span class="badge bg-steel text-white"><i class="bi bi-exclamation-triangle me-1"></i>Expire bientôt (@remainingDays j)</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Valide (@remainingDays j)</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-navy me-1" @onclick="() => EditChauffeur(c)">
+                                    <i class="bi bi-pencil"></i> Modifier
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteChauffeur(c.Id)">
+                                    <i class="bi bi-trash"></i> Supprimer
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<ChauffeurDto> chauffeursList;
+    private ChauffeurDto CurrentChauffeur = new() { PermisExpiration = DateTime.Today.AddYears(5) };
+    private bool ShowForm = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            chauffeursList = await Http.GetFromJsonAsync<List<ChauffeurDto>>("Chauffeurs");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error loading driver data: " + ex.Message);
+            chauffeursList ??= new();
+        }
+    }
+
+    private void ShowAddForm()
+    {
+        CurrentChauffeur = new ChauffeurDto 
+        { 
+            PermisExpiration = DateTime.Today.AddYears(5),
+            Statut = "Disponible"
+        };
+        ShowForm = true;
+    }
+
+    private void EditChauffeur(ChauffeurDto c)
+    {
+        CurrentChauffeur = new ChauffeurDto
+        {
+            Id = c.Id,
+            Nom = c.Nom,
+            Prenom = c.Prenom,
+            Telephone = c.Telephone,
+            PermisNumero = c.PermisNumero,
+            PermisExpiration = c.PermisExpiration,
+            Statut = c.Statut,
+            UtilisateurId = c.UtilisateurId,
+            Email = c.Email
+        };
+        ShowForm = true;
+    }
+
+    private void CancelForm()
+    {
+        ShowForm = false;
+    }
+
+    private async Task SaveChauffeur()
+    {
+        if (string.IsNullOrEmpty(CurrentChauffeur.Nom) ||
+            string.IsNullOrEmpty(CurrentChauffeur.Prenom) ||
+            string.IsNullOrEmpty(CurrentChauffeur.PermisNumero))
+        {
+            await Dialog.ShowWarningAsync("Veuillez remplir toutes les informations requises.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(CurrentChauffeur.Email))
+        {
+            await Dialog.ShowWarningAsync("Veuillez saisir l'email de connexion du chauffeur.");
+            return;
+        }
+
+        if (CurrentChauffeur.Id == 0 && string.IsNullOrWhiteSpace(CurrentChauffeur.MotDePasse))
+        {
+            await Dialog.ShowWarningAsync("Veuillez saisir un mot de passe pour le compte chauffeur.");
+            return;
+        }
+
+        if (CurrentChauffeur.UtilisateurId is 0)
+            CurrentChauffeur.UtilisateurId = null;
+
+        try
+        {
+            HttpResponseMessage response;
+            if (CurrentChauffeur.Id == 0)
+            {
+                response = await Http.PostAsJsonAsync("Chauffeurs", CurrentChauffeur);
+            }
+            else
+            {
+                response = await Http.PutAsJsonAsync($"Chauffeurs/{CurrentChauffeur.Id}", CurrentChauffeur);
+            }
+
+            if (response.IsSuccessStatusCode)
+            {
+                ShowForm = false;
+                await LoadData();
+                await Dialog.ShowAlertAsync("Chauffeur enregistré avec succès.");
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                await Dialog.ShowErrorAsync(string.IsNullOrWhiteSpace(error) ? "Erreur lors de l'enregistrement." : error.Trim('"'));
+            }
+        }
+        catch (Exception ex)
+        {
+            await Dialog.ShowErrorAsync("Erreur: " + ex.Message);
+        }
+    }
+
+    private async Task DeleteChauffeur(int id)
+    {
+        var confirm = await Dialog.ShowConfirmAsync("Voulez-vous vraiment supprimer ce chauffeur ?");
+        if (!confirm) return;
+
+        try
+        {
+            var response = await Http.DeleteAsync($"Chauffeurs/{id}");
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadData();
+                await Dialog.ShowAlertAsync("Chauffeur supprimé.");
+            }
+            else
+            {
+                await Dialog.ShowErrorAsync("Erreur lors de la suppression.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await Dialog.ShowErrorAsync("Erreur: " + ex.Message);
+        }
+    }
+
+    private static string FormatStatut(string statut) => statut switch
+    {
+        "EnMission" => "En mission",
+        "Indisponible" => "Indisponible",
+        _ => "Disponible"
+    };
+}

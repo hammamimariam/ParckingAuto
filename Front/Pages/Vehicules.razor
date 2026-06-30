@@ -1,0 +1,580 @@
+@page "/vehicules"
+@using ParckingAuto.DTO
+@using Front.Services
+@inject HttpClient Http
+@inject DialogService Dialog
+@inject NavigationManager Navigation
+
+<div class="container mt-4 animate-fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="title-custom"><i class="bi bi-car-front me-2"></i>Gestion des Véhicules</h2>
+        <button class="btn btn-custom-primary" @onclick="ShowAddForm">
+            <i class="bi bi-plus-circle me-1"></i> Ajouter un Véhicule
+        </button>
+    </div>
+
+    <!-- Filtre de recherche instantané -->
+    <div class="card card-custom p-3 mb-4 shadow-sm">
+        <div class="input-group">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input value="@SearchTerm" @oninput="OnSearchChanged" placeholder="Rechercher par immatriculation, marque, modèle..." class="form-control border-start-0" />
+        </div>
+    </div>
+
+    @if (ShowForm)
+    {
+        <div class="card card-custom p-4 mb-4 animate-slide-down">
+            <h4 class="mb-3 text-navy">@(CurrentVehicule.Id == 0 ? "Ajouter un Véhicule" : "Modifier le Véhicule")</h4>
+
+            <h5 class="text-navy border-bottom pb-2"><i class="bi bi-card-text me-2"></i>Carte grise (Tunisie)</h5>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Immatriculation (Matricule) *</label>
+                    <div class="plate-input-group">
+                        <input class="form-control plate-part" value="@PlatePrefix" @oninput="OnPlatePrefixInput" maxlength="3" placeholder="123" inputmode="numeric" />
+                        <span class="plate-separator">TUN</span>
+                        <input class="form-control plate-part" value="@PlateSuffix" @oninput="OnPlateSuffixInput" maxlength="4" placeholder="4567" inputmode="numeric" />
+                    </div>
+                    <small class="text-muted">Format : 1 à 3 chiffres — TUN — 1 à 4 chiffres (ex: 1 TUN 5, 241 TUN 595)</small>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">N° série carte grise</label>
+                    <input class="form-control" @bind="CurrentVehicule.NumeroCarteGrise" placeholder="Ex: 2024/123456" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Genre</label>
+                    <select class="form-select" @bind="CurrentVehicule.GenreVehicule">
+                        <option value="VP">VP — Véhicule particulier</option>
+                        <option value="VUL">VUL — Utilitaire léger</option>
+                        <option value="Camion">Camion</option>
+                        <option value="Autobus">Autobus / Minibus</option>
+                        <option value="Moto">Moto</option>
+                        <option value="Autre">Autre</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Marque *</label>
+                    <input class="form-control" @bind="CurrentVehicule.Marque" placeholder="Ex: Peugeot, Renault..." />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Type / Modèle *</label>
+                    <input class="form-control" @bind="CurrentVehicule.Modele" placeholder="Ex: Partner, Clio..." />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Constructeur</label>
+                    <input class="form-control" @bind="CurrentVehicule.Constructeur" placeholder="Si différent de la marque" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">N° de châssis (VIN)</label>
+                    <input class="form-control" @bind="CurrentVehicule.NumeroChassis" placeholder="17 caractères" maxlength="17" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Énergie / Carburant</label>
+                    <select class="form-select" @bind="CurrentVehicule.TypeCarburant">
+                        <option value="Essence">Essence</option>
+                        <option value="Diesel">Diesel (Gazole)</option>
+                        <option value="GPL">GPL</option>
+                        <option value="Electrique">Électrique</option>
+                        <option value="Hybride">Hybride</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Couleur</label>
+                    <input class="form-control" @bind="CurrentVehicule.Couleur" placeholder="Ex: Blanc, Gris..." />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Puissance fiscale (CV)</label>
+                    <input type="number" class="form-control" @bind="CurrentVehicule.PuissanceFiscale" min="0" />
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Nombre de places</label>
+                    <input type="number" class="form-control" @bind="CurrentVehicule.NombrePlaces" min="1" max="60" />
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">1ère mise en circulation</label>
+                    <input type="date" class="form-control" @bind="CurrentVehicule.DatePremiereMiseEnCirculation" />
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Année fabrication</label>
+                    <input type="number" class="form-control" @bind="CurrentVehicule.AnneeFabrication" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Kilométrage actuel</label>
+                    <input type="number" class="form-control" @bind="CurrentVehicule.Kilometrage" min="0" />
+                </div>
+            </div>
+
+            <h5 class="mt-3 text-navy border-bottom pb-2"><i class="bi bi-shield-check me-2"></i>Attestation d'assurance (Tunisie)</h5>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Compagnie d'assurance</label>
+                    <input class="form-control" @bind="CurrentVehicule.Assurance" placeholder="Ex: STAR, COMAR, CARTE..." />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">N° police / contrat</label>
+                    <input class="form-control" @bind="CurrentVehicule.AssuranceReference" placeholder="N° attestation" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Usage</label>
+                    <select class="form-select" @bind="CurrentVehicule.UsageVehicule">
+                        <option value="Personnel">Personnel</option>
+                        <option value="Professionnel">Professionnel</option>
+                        <option value="Transport marchandises">Transport marchandises</option>
+                        <option value="Taxi">Taxi</option>
+                        <option value="Autre">Autre</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Date d'effet (début)</label>
+                    <input type="date" class="form-control" @bind="CurrentVehicule.AssuranceDateDebut" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Date d'expiration (échéance)</label>
+                    <input type="date" class="form-control" @bind="CurrentVehicule.AssuranceDate" />
+                </div>
+            </div>
+
+            <h5 class="mt-3 text-navy border-bottom pb-2"><i class="bi bi-clipboard-check me-2"></i>Visite technique</h5>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Date dernière visite</label>
+                    <input type="date" class="form-control" @bind="CurrentVehicule.VisiteTechniqueDate" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Prochaine visite (expiration)</label>
+                    <input type="date" class="form-control" @bind="CurrentVehicule.ProchaineVisite" />
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-outline-secondary" @onclick="CancelForm">Annuler</button>
+                <button class="btn btn-custom-success" @onclick="SaveVehicule">
+                    <i class="bi bi-save me-1"></i> Enregistrer
+                </button>
+            </div>
+        </div>
+    }
+
+    @if (SelectedVehicule != null)
+    {
+        <div class="card card-custom p-4 mb-4 border-start-navy animate-slide-down">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <h4 class="text-navy"><i class="bi bi-info-circle-fill me-2"></i>Détails du Véhicule</h4>
+                <button type="button" class="btn-close" @onclick="CloseDetails"></button>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Marque & Modèle :</strong> @SelectedVehicule.Marque @SelectedVehicule.Modele</p>
+                    <p><strong>Immatriculation :</strong> <span class="plate-number">@SelectedVehicule.Immatriculation</span></p>
+                    <p><strong>Carte grise N° :</strong> @(string.IsNullOrWhiteSpace(SelectedVehicule.NumeroCarteGrise) ? "—" : SelectedVehicule.NumeroCarteGrise)</p>
+                    <p><strong>Genre :</strong> @(string.IsNullOrWhiteSpace(SelectedVehicule.GenreVehicule) ? "—" : SelectedVehicule.GenreVehicule)</p>
+                    <p><strong>Châssis :</strong> @(string.IsNullOrWhiteSpace(SelectedVehicule.NumeroChassis) ? "—" : SelectedVehicule.NumeroChassis)</p>
+                    <p><strong>Énergie :</strong> @SelectedVehicule.TypeCarburant</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Assurance :</strong> @(string.IsNullOrWhiteSpace(SelectedVehicule.Assurance) ? "—" : SelectedVehicule.Assurance)</p>
+                    <p><strong>N° police :</strong> @(string.IsNullOrWhiteSpace(SelectedVehicule.AssuranceReference) ? "—" : SelectedVehicule.AssuranceReference)</p>
+                    <p><strong>Effet assurance :</strong> @SelectedVehicule.AssuranceDateDebut?.ToString("dd/MM/yyyy")</p>
+                    <p><strong>Expiration assurance :</strong> @SelectedVehicule.AssuranceDate?.ToString("dd/MM/yyyy")</p>
+                    <p><strong>Visite technique :</strong> @SelectedVehicule.ProchaineVisite?.ToString("dd/MM/yyyy")</p>
+                    <p><strong>Kilométrage :</strong> @SelectedVehicule.Kilometrage.ToString("N0") km</p>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (Vehicles == null)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Chargement des véhicules...</p>
+        </div>
+    }
+    else if (!FilteredVehicles.Any())
+    {
+        <div class="alert alert-info text-center">Aucun véhicule ne correspond aux critères de recherche.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-custom">
+                <thead>
+                    <tr>
+                        <th>Immatriculation</th>
+                        <th>Marque / Modèle</th>
+                        <th>Statut</th>
+                        <th>Carburant</th>
+                        <th>Kilométrage</th>
+                        <th>Km vidange</th>
+                        <th>Assurance Expiration</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var v in FilteredVehicles)
+                    {
+                        <tr>
+                            <td>
+                                <span class="plate-number">@(string.IsNullOrWhiteSpace(v.Immatriculation) ? "—" : v.Immatriculation)</span>
+                            </td>
+                            <td>
+                                <strong>@v.Marque</strong> @v.Modele
+                                <small class="d-block text-muted">Année: @v.AnneeFabrication | VIN: @(string.IsNullOrWhiteSpace(v.NumeroChassis) ? "—" : v.NumeroChassis)</small>
+                            </td>
+                            <td>
+                                <span class="badge @(v.Statut == "En mission" ? "bg-steel" : "bg-success")">@v.Statut</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-steel">@v.TypeCarburant</span>
+                            </td>
+                            <td class="text-bold text-navy">@v.Kilometrage.ToString("N0") km</td>
+                            <td>
+                                @if (v.KmDepuisVidange >= 9000)
+                                {
+                                    <span class="badge bg-danger">@v.KmDepuisVidange.ToString("N0") km</span>
+                                }
+                                else if (v.KmDepuisVidange >= 7000)
+                                {
+                                    <span class="badge bg-warning text-dark">@v.KmDepuisVidange.ToString("N0") km</span>
+                                }
+                                else
+                                {
+                                    <span>@v.KmDepuisVidange.ToString("N0") km</span>
+                                }
+                            </td>
+                            <td>@v.AssuranceDate?.ToString("dd/MM/yyyy")</td>
+                            <td class="text-end text-nowrap">
+                                <button class="btn btn-sm btn-outline-success me-1" title="Consulter" @onclick="() => ViewDetails(v)">
+                                    <i class="bi bi-eye"></i> Consulter
+                                </button>
+                                <button class="btn btn-sm btn-outline-navy me-1" title="Modifier" @onclick="() => EditVehicule(v)">
+                                    <i class="bi bi-pencil"></i> Modifier
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" title="Supprimer" @onclick="() => DeleteVehicule(v.Id)">
+                                    <i class="bi bi-trash"></i> Supprimer
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<style>
+    .border-start-navy {
+        border-left: 5px solid #003049 !important;
+    }
+
+    .plate-input-group {
+        display: flex;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+
+    .plate-input-group .plate-part {
+        flex: 1;
+        text-align: center;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .plate-separator {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 3.25rem;
+        padding: 0 0.5rem;
+        background-color: #003049;
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.85rem;
+        letter-spacing: 0.06em;
+        border-radius: 6px;
+        user-select: none;
+    }
+</style>
+
+@code {
+    private List<VehiculeDto> Vehicles;
+    private string SearchTerm = "";
+    private VehiculeDto CurrentVehicule = new() { TypeCarburant = "Diesel" };
+    private VehiculeDto? SelectedVehicule;
+    private bool ShowForm = false;
+    private string PlatePrefix = "";
+    private string PlateSuffix = "";
+
+    private IEnumerable<VehiculeDto> FilteredVehicles
+    {
+        get
+        {
+            if (Vehicles == null) return Enumerable.Empty<VehiculeDto>();
+            if (string.IsNullOrWhiteSpace(SearchTerm)) return Vehicles;
+
+            return Vehicles.Where(v =>
+                (v.Immatriculation?.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (v.Marque?.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (v.Modele?.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (v.NumeroChassis?.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
+            );
+        }
+    }
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        SearchTerm = e.Value?.ToString() ?? "";
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            Vehicles = await Http.GetFromJsonAsync<List<VehiculeDto>>("Vehicules") ?? new List<VehiculeDto>();
+        }
+        catch (Exception ex)
+        {
+            Vehicles = new List<VehiculeDto>();
+            Console.WriteLine("Error loading vehicles: " + ex.Message);
+        }
+    }
+
+    private void ShowAddForm()
+    {
+        CurrentVehicule = new VehiculeDto 
+        { 
+            TypeCarburant = "Diesel",
+            GenreVehicule = "VP",
+            UsageVehicule = "Professionnel",
+            AnneeFabrication = DateTime.Today.Year,
+            AnneeMiseEnCirculation = DateTime.Today.Year,
+            AssuranceDateDebut = DateTime.Today,
+            AssuranceDate = DateTime.Today.AddYears(1),
+            VisiteTechniqueDate = DateTime.Today,
+            ProchaineVisite = DateTime.Today.AddYears(1)
+        };
+        PlatePrefix = "";
+        PlateSuffix = "";
+        SelectedVehicule = null;
+        ShowForm = true;
+    }
+
+    private void EditVehicule(VehiculeDto v)
+    {
+        CurrentVehicule = new VehiculeDto
+        {
+            Id = v.Id,
+            Immatriculation = v.Immatriculation,
+            Marque = v.Marque,
+            Constructeur = v.Constructeur,
+            Modele = v.Modele,
+            AnneeFabrication = v.AnneeFabrication,
+            AnneeMiseEnCirculation = v.AnneeMiseEnCirculation,
+            NumeroChassis = v.NumeroChassis,
+            Kilometrage = v.Kilometrage,
+            DernierKmVidange = v.DernierKmVidange,
+            KmDepuisVidange = v.KmDepuisVidange,
+            TypeCarburant = v.TypeCarburant,
+            NumeroCarteGrise = v.NumeroCarteGrise,
+            GenreVehicule = v.GenreVehicule,
+            PuissanceFiscale = v.PuissanceFiscale,
+            NombrePlaces = v.NombrePlaces,
+            Couleur = v.Couleur,
+            DatePremiereMiseEnCirculation = v.DatePremiereMiseEnCirculation,
+            Assurance = v.Assurance,
+            AssuranceReference = v.AssuranceReference,
+            AssuranceDateDebut = v.AssuranceDateDebut,
+            AssuranceDate = v.AssuranceDate,
+            UsageVehicule = v.UsageVehicule,
+            VisiteTechniqueDate = v.VisiteTechniqueDate,
+            ProchaineVisite = v.ProchaineVisite
+        };
+        ParseImmatriculation(v.Immatriculation);
+        SelectedVehicule = null;
+        ShowForm = true;
+    }
+
+    private void ViewDetails(VehiculeDto v) => Navigation.NavigateTo($"/vehicule/{v.Id}");
+
+    private void CloseDetails()
+    {
+        SelectedVehicule = null;
+    }
+
+    private void CancelForm()
+    {
+        ShowForm = false;
+    }
+
+    private async Task SaveVehicule()
+    {
+        CurrentVehicule.Immatriculation = BuildImmatriculation();
+
+        if (CurrentVehicule.DatePremiereMiseEnCirculation.HasValue)
+            CurrentVehicule.AnneeMiseEnCirculation = CurrentVehicule.DatePremiereMiseEnCirculation.Value.Year;
+
+        if (!TryValidateForm(out var validationError))
+        {
+            await Dialog.ShowWarningAsync(validationError);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(CurrentVehicule.TypeCarburant))
+            CurrentVehicule.TypeCarburant = "Diesel";
+
+        try
+        {
+            HttpResponseMessage response;
+            if (CurrentVehicule.Id == 0)
+            {
+                response = await Http.PostAsJsonAsync("Vehicules", CurrentVehicule);
+            }
+            else
+            {
+                response = await Http.PutAsJsonAsync($"Vehicules/{CurrentVehicule.Id}", CurrentVehicule);
+            }
+
+            if (response.IsSuccessStatusCode)
+            {
+                ShowForm = false;
+                await LoadData();
+                await Dialog.ShowSuccessAsync("Véhicule enregistré avec succès.");
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                await Dialog.ShowErrorAsync(string.IsNullOrWhiteSpace(error) ? "Erreur lors de l'enregistrement." : error);
+            }
+        }
+        catch (Exception ex)
+        {
+            await Dialog.ShowErrorAsync("Erreur: " + ex.Message);
+        }
+    }
+
+    private async Task DeleteVehicule(int id)
+    {
+        var confirm = await Dialog.ShowConfirmAsync("Voulez-vous vraiment supprimer ce véhicule ?");
+        if (!confirm) return;
+
+        try
+        {
+            var response = await Http.DeleteAsync($"Vehicules/{id}");
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadData();
+                await Dialog.ShowAlertAsync("Véhicule supprimé.");
+            }
+            else
+            {
+                await Dialog.ShowErrorAsync("Erreur lors de la suppression. Le véhicule est peut-être lié à d'autres enregistrements.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await Dialog.ShowErrorAsync("Erreur: " + ex.Message);
+        }
+    }
+
+    private void OnPlatePrefixInput(ChangeEventArgs e)
+    {
+        PlatePrefix = FilterDigits(e.Value?.ToString(), 3);
+    }
+
+    private void OnPlateSuffixInput(ChangeEventArgs e)
+    {
+        PlateSuffix = FilterDigits(e.Value?.ToString(), 4);
+    }
+
+    private static string FilterDigits(string? value, int maxLen)
+    {
+        var digits = new string((value ?? "").Where(char.IsDigit).ToArray());
+        return digits.Length > maxLen ? digits[..maxLen] : digits;
+    }
+
+    private void ParseImmatriculation(string? immatriculation)
+    {
+        PlatePrefix = "";
+        PlateSuffix = "";
+
+        if (string.IsNullOrWhiteSpace(immatriculation))
+            return;
+
+        var parts = immatriculation.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 3)
+        {
+            PlatePrefix = FilterDigits(parts[0], 3);
+            PlateSuffix = FilterDigits(parts[^1], 4);
+            return;
+        }
+
+        var digits = FilterDigits(immatriculation, 7);
+        if (digits.Length >= 2)
+        {
+            var splitAt = Math.Clamp(digits.Length - 1, 1, 3);
+            if (splitAt >= digits.Length)
+                splitAt = digits.Length - 1;
+            PlatePrefix = digits[..splitAt];
+            PlateSuffix = digits[splitAt..];
+        }
+    }
+
+    private bool TryValidateForm(out string error)
+    {
+        if (PlatePrefix.Length < 1 || PlatePrefix.Length > 3)
+        {
+            error = "Immatriculation : saisissez 1 à 3 chiffres avant TUN.";
+            return false;
+        }
+
+        if (PlateSuffix.Length < 1 || PlateSuffix.Length > 4)
+        {
+            error = "Immatriculation : saisissez 1 à 4 chiffres après TUN.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(CurrentVehicule.Marque))
+        {
+            error = "Le champ Marque est obligatoire.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(CurrentVehicule.Modele))
+        {
+            error = "Le champ Type / Modèle est obligatoire (ex: 208, Partner, Clio).";
+            return false;
+        }
+
+        error = "";
+        return true;
+    }
+
+    private string BuildImmatriculation()
+    {
+        if (string.IsNullOrWhiteSpace(PlatePrefix) && string.IsNullOrWhiteSpace(PlateSuffix))
+            return "";
+
+        return $"{PlatePrefix} TUN {PlateSuffix}";
+    }
+}

@@ -1,0 +1,321 @@
+@page "/carburant"
+@using ParckingAuto.DTO
+@inject HttpClient Http
+@inject DialogService Dialog
+
+<div class="container mt-4 animate-fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="title-custom"><i class="bi bi-fuel-pump me-2"></i>Suivi du Carburant</h2>
+        <button class="btn btn-custom-primary" @onclick="ShowAddForm">
+            <i class="bi bi-plus-circle me-1"></i> Enregistrer un Plein
+        </button>
+    </div>
+
+    <!-- Section statistiques de consommation moyenne -->
+    <div class="card card-custom p-4 mb-4 bg-light shadow-sm">
+        <h4 class="text-navy mb-3"><i class="bi bi-calculator-fill me-2"></i>Consommation Moyenne par Véhicule</h4>
+        @if (Carburants == null)
+        {
+            <p class="text-muted">Calcul en cours...</p>
+        }
+        else if (!Carburants.Any())
+        {
+            <p class="text-muted">Aucune donnée disponible pour calculer les moyennes.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-bordered bg-white">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th>Véhicule</th>
+                            <th>Total Pleins</th>
+                            <th>Volume Total</th>
+                            <th>Coût Total</th>
+                            <th>Kms Parcourus</th>
+                            <th>Consommation Moyenne</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var stat in CalculateMoyenneStats())
+                        {
+                            <tr>
+                                <td><span class="badge bg-navy">@stat.Immatriculation</span></td>
+                                <td>@stat.TotalPleins</td>
+                                <td>@stat.TotalLitres.ToString("N1") L</td>
+                                <td class="text-bold text-red">@stat.TotalCout.ToString("N3") DT</td>
+                                <td>@(stat.KmsParcourus > 0 ? $"{stat.KmsParcourus} km" : "Insuffisant")</td>
+                                <td>
+                                    @if (stat.ConsommationMoyenne > 0)
+                                    {
+                                        <span class="badge bg-steel text-white fs-6">@stat.ConsommationMoyenne.ToString("N2") L/100 km</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Données insuffisantes (Min. 2 pleins requis)</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    @if (ShowForm)
+    {
+        <div class="card card-custom p-4 mb-4 animate-slide-down">
+            <h4 class="mb-3 text-navy">Enregistrer un plein de carburant</h4>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Véhicule</label>
+                    <select class="form-select" @bind="NewPlein.VehiculeId" @bind:after="OnVehiculeSelected">
+                        <option value="0">-- Choisir un véhicule --</option>
+                        @foreach (var v in Vehicles)
+                        {
+                            <option value="@v.Id">@v.Marque @v.Modele - @v.Immatriculation</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Date du plein</label>
+                    <input type="datetime-local" class="form-control" @bind="NewPlein.Date" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Volume (Litres)</label>
+                    <input type="number" step="0.01" class="form-control" @bind="NewPlein.Litres" placeholder="0.00" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Coût Total (DT)</label>
+                    <input type="number" step="0.001" class="form-control" @bind="NewPlein.Cout" placeholder="0.000" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Kilométrage actuel (Odomètre)</label>
+                    <input type="number" class="form-control" @bind="NewPlein.Kilometrage" />
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-outline-secondary" @onclick="CancelForm">Annuler</button>
+                <button class="btn btn-custom-success" @onclick="SavePlein">
+                    <i class="bi bi-save me-1"></i> Enregistrer
+                </button>
+            </div>
+        </div>
+    }
+
+    @if (Carburants == null)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Chargement de l'historique...</p>
+        </div>
+    }
+    else if (!Carburants.Any())
+    {
+        <div class="alert alert-info text-center">Aucun historique de plein disponible.</div>
+    }
+    else
+    {
+        <h4 class="text-navy mb-3"><i class="bi bi-clock-history me-2"></i>Historique des Pleins</h4>
+        <div class="table-responsive">
+            <table class="table table-custom">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Véhicule</th>
+                        <th>Volume (Litres)</th>
+                        <th>Coût Total</th>
+                        <th>Kilométrage</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Carburants)
+                    {
+                        <tr>
+                            <td>@c.Date.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td><span class="badge bg-navy">@c.VehiculeImmatriculation</span></td>
+                            <td>@c.Litres.ToString("N2") L</td>
+                            <td class="text-bold text-red">@c.Cout.ToString("N3") DT</td>
+                            <td>@c.Kilometrage.ToString("N0") km</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeletePlein(c.Id)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<CarburantDto> Carburants;
+    private List<VehiculeDto> Vehicles = new();
+    private CarburantDto NewPlein = new() { Date = DateTime.Now };
+    private bool ShowForm = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            Carburants = await Http.GetFromJsonAsync<List<CarburantDto>>("Carburant");
+            Vehicles = await Http.GetFromJsonAsync<List<VehiculeDto>>("Vehicules");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error loading carburant: " + ex.Message);
+        }
+    }
+
+    private void ShowAddForm()
+    {
+        NewPlein = new CarburantDto 
+        { 
+            Date = DateTime.Now,
+            VehiculeId = Vehicles.FirstOrDefault()?.Id ?? 0 
+        };
+        OnVehiculeSelected();
+        ShowForm = true;
+    }
+
+    private void OnVehiculeSelected()
+    {
+        var v = Vehicles.FirstOrDefault(ve => ve.Id == NewPlein.VehiculeId);
+        if (v != null)
+        {
+            NewPlein.Kilometrage = v.Kilometrage;
+        }
+    }
+
+    private void CancelForm()
+    {
+        ShowForm = false;
+    }
+
+    private async Task SavePlein()
+    {
+        if (NewPlein.VehiculeId == 0)
+        {
+            await Dialog.ShowWarningAsync("Veuillez choisir un véhicule.");
+            return;
+        }
+
+        if (NewPlein.Litres <= 0 || NewPlein.Cout <= 0 || NewPlein.Kilometrage <= 0)
+        {
+            await Dialog.ShowWarningAsync("Veuillez remplir correctement tous les champs numériques.");
+            return;
+        }
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("Carburant", NewPlein);
+            if (response.IsSuccessStatusCode)
+            {
+                // Mettre à jour le kilométrage du véhicule en base
+                var veh = Vehicles.FirstOrDefault(v => v.Id == NewPlein.VehiculeId);
+                if (veh != null && NewPlein.Kilometrage > veh.Kilometrage)
+                {
+                    veh.Kilometrage = (int)NewPlein.Kilometrage;
+                    await Http.PutAsJsonAsync($"Vehicules/{veh.Id}", veh);
+                }
+
+                ShowForm = false;
+                await LoadData();
+                await Dialog.ShowAlertAsync("Plein de carburant enregistré.");
+            }
+            else
+            {
+                await Dialog.ShowErrorAsync("Erreur lors de l'enregistrement.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await Dialog.ShowErrorAsync(ex.Message);
+        }
+    }
+
+    private async Task DeletePlein(int id)
+    {
+        var confirm = await Dialog.ShowConfirmAsync("Voulez-vous vraiment supprimer cet enregistrement ?");
+        if (!confirm) return;
+
+        try
+        {
+            var response = await Http.DeleteAsync($"Carburant/{id}");
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadData();
+                await Dialog.ShowAlertAsync("Enregistrement supprimé.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await Dialog.ShowErrorAsync(ex.Message);
+        }
+    }
+
+    private List<ConsommationStat> CalculateMoyenneStats()
+    {
+        var stats = new List<ConsommationStat>();
+        if (Carburants == null || !Carburants.Any()) return stats;
+
+        var groups = Carburants.GroupBy(c => c.VehiculeId);
+        foreach (var g in groups)
+        {
+            var sorted = g.OrderBy(c => c.Kilometrage).ToList();
+            var immatriculation = sorted.First().VehiculeImmatriculation;
+            
+            double totalLitres = sorted.Sum(c => c.Litres);
+            double totalCout = sorted.Sum(c => c.Cout);
+            int totalPleins = sorted.Count;
+
+            double kmsParcourus = 0;
+            double moyenne = 0;
+
+            if (sorted.Count >= 2)
+            {
+                kmsParcourus = sorted.Last().Kilometrage - sorted.First().Kilometrage;
+                if (kmsParcourus > 0)
+                {
+                    // Formule de consommation moyenne: (Volume total consommé / Distance parcourue) * 100
+                    moyenne = (totalLitres * 100) / kmsParcourus;
+                }
+            }
+
+            stats.Add(new ConsommationStat
+            {
+                Immatriculation = immatriculation,
+                TotalPleins = totalPleins,
+                TotalLitres = totalLitres,
+                TotalCout = totalCout,
+                KmsParcourus = kmsParcourus,
+                ConsommationMoyenne = moyenne
+            });
+        }
+
+        return stats;
+    }
+
+    private class ConsommationStat
+    {
+        public string Immatriculation { get; set; } = "";
+        public int TotalPleins { get; set; }
+        public double TotalLitres { get; set; }
+        public double TotalCout { get; set; }
+        public double KmsParcourus { get; set; }
+        public double ConsommationMoyenne { get; set; }
+    }
+}
