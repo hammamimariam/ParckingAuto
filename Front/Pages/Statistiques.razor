@@ -2,12 +2,137 @@
 @using ParckingAuto.DTO
 @inject HttpClient Http
 @inject IJSRuntime JS
+@inject AuthService AuthService
 
 <h3 class="title-custom mb-4"><i class="bi bi-graph-up me-2"></i>Statistiques de la flotte</h3>
 
 @if (LoadError != null)
 {
     <div class="alert alert-warning">@LoadError</div>
+}
+
+@if (AuthService.Role == "Administrateur")
+{
+    <div class="card card-custom mb-4 p-4">
+        <h5 class="text-navy mb-4 pb-2 border-bottom"><i class="bi bi-funnel me-2"></i>Filtres</h5>
+        <div class="row g-4 mb-4">
+            <div class="col-md-6 col-lg-3">
+                <label class="form-label fw-semibold text-secondary">Année</label>
+                <select class="form-select" @bind="Filter.Annee" @bind:event="onchange">
+                    <option value="">Toutes</option>
+                    @for (int year = DateTime.Now.Year; year >= DateTime.Now.Year - 5; year--)
+                    {
+                        <option value="@year">@year</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <label class="form-label fw-semibold text-secondary">Mois</label>
+                <select class="form-select" @bind="Filter.Mois" @bind:event="onchange">
+                    <option value="">Tous</option>
+                    @for (int month = 1; month <= 12; month++)
+                    {
+                        <option value="@month">@System.Globalization.CultureInfo.GetCultureInfo("fr-FR").DateTimeFormat.GetMonthName(month)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <label class="form-label fw-semibold text-secondary">Véhicule</label>
+                <select class="form-select" @bind="Filter.VehiculeId" @bind:event="onchange">
+                    <option value="">Tous</option>
+                    @if (Vehicules != null)
+                    {
+                        @foreach (var v in Vehicules)
+                        {
+                            <option value="@v.Id">@v.Immatriculation - @v.Marque @v.Modele</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <label class="form-label fw-semibold text-secondary">Chauffeur</label>
+                <select class="form-select" @bind="Filter.ChauffeurId" @bind:event="onchange">
+                    <option value="">Tous</option>
+                    @if (Chauffeurs != null)
+                    {
+                        @foreach (var c in Chauffeurs)
+                        {
+                            <option value="@c.Id">@c.Prenom @c.Nom</option>
+                        }
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="d-flex gap-3 mb-4 flex-wrap">
+            <button class="btn btn-custom-primary px-4" @onclick="LoadData">
+                <i class="bi bi-arrow-clockwise me-2"></i>Actualiser les données
+            </button>
+            <button class="btn btn-outline-secondary px-4" @onclick="ResetFilters">
+                <i class="bi bi-x-circle me-2"></i>Réinitialiser les filtres
+            </button>
+        </div>
+
+        <hr class="mb-4" />
+
+        <h5 class="text-navy mb-3 pb-2 border-bottom"><i class="bi bi-download me-2"></i>Exporter les rapports</h5>
+        
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="card border-0 bg-light">
+                    <div class="card-body">
+                        <h6 class="fw-bold text-dark mb-3">
+                            <i class="bi bi-fuel-pump text-info me-2"></i>Carburants
+                        </h6>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-success btn-sm flex-fill" @onclick="ExportCarburantCsv">
+                                <i class="bi bi-filetype-csv me-1"></i>CSV
+                            </button>
+                            <button class="btn btn-danger btn-sm flex-fill" @onclick="ExportCarburantPdf">
+                                <i class="bi bi-filetype-pdf me-1"></i>PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card border-0 bg-light">
+                    <div class="card-body">
+                        <h6 class="fw-bold text-dark mb-3">
+                            <i class="bi bi-tools text-warning me-2"></i>Maintenances
+                        </h6>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-success btn-sm flex-fill" @onclick="ExportMaintenanceCsv">
+                                <i class="bi bi-filetype-csv me-1"></i>CSV
+                            </button>
+                            <button class="btn btn-danger btn-sm flex-fill" @onclick="ExportMaintenancePdf">
+                                <i class="bi bi-filetype-pdf me-1"></i>PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card border-0 bg-light">
+                    <div class="card-body">
+                        <h6 class="fw-bold text-dark mb-3">
+                            <i class="bi bi-arrow-left-right text-primary me-2"></i>Mouvements
+                        </h6>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-success btn-sm flex-fill" @onclick="ExportMouvementsCsv">
+                                <i class="bi bi-filetype-csv me-1"></i>CSV
+                            </button>
+                            <button class="btn btn-danger btn-sm flex-fill" @onclick="ExportMouvementsPdf">
+                                <i class="bi bi-filetype-pdf me-1"></i>PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 }
 
 <div class="row g-4">
@@ -39,19 +164,109 @@
 
 @code {
     private StatistiquesDto? Stats;
+    private List<VehiculeDto>? Vehicules;
+    private List<ChauffeurDto>? Chauffeurs;
     private string? LoadError;
     private bool _chartsRendered;
+    private StatistiquesFilterDto Filter = new();
 
     protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+        await LoadVehiculesAndChauffeurs();
+    }
+
+    private async Task LoadVehiculesAndChauffeurs()
+    {
+        try
+        {
+            Vehicules = await Http.GetFromJsonAsync<List<VehiculeDto>>("Vehicules");
+            Chauffeurs = await Http.GetFromJsonAsync<List<ChauffeurDto>>("Chauffeurs");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error loading vehicles or chauffeurs: " + ex.Message);
+        }
+    }
+
+    private async Task LoadData()
     {
         _chartsRendered = false;
         try
         {
-            Stats = await Http.GetFromJsonAsync<StatistiquesDto>("Statistiques");
+            var query = new List<string>();
+            if (Filter.Annee.HasValue) query.Add($"annee={Filter.Annee.Value}");
+            if (Filter.Mois.HasValue) query.Add($"mois={Filter.Mois.Value}");
+            if (Filter.VehiculeId.HasValue) query.Add($"vehiculeId={Filter.VehiculeId.Value}");
+            if (Filter.ChauffeurId.HasValue) query.Add($"chauffeurId={Filter.ChauffeurId.Value}");
+
+            var url = "Statistiques" + (query.Any() ? "?" + string.Join("&", query) : "");
+            Stats = await Http.GetFromJsonAsync<StatistiquesDto>(url);
         }
         catch (Exception ex)
         {
             LoadError = "Impossible de charger les statistiques : " + ex.Message;
+        }
+    }
+
+    private void ResetFilters()
+    {
+        Filter = new StatistiquesFilterDto();
+        StateHasChanged();
+    }
+
+    private async Task ExportCarburantCsv()
+    {
+        await DownloadFile("export/carburant/csv", "carburants.csv", "text/csv");
+    }
+
+    private async Task ExportCarburantPdf()
+    {
+        await DownloadFile("export/carburant/pdf", "carburants.pdf", "application/pdf");
+    }
+
+    private async Task ExportMaintenanceCsv()
+    {
+        await DownloadFile("export/maintenance/csv", "maintenances.csv", "text/csv");
+    }
+
+    private async Task ExportMaintenancePdf()
+    {
+        await DownloadFile("export/maintenance/pdf", "maintenances.pdf", "application/pdf");
+    }
+
+    private async Task ExportMouvementsCsv()
+    {
+        await DownloadFile("export/mouvements/csv", "mouvements.csv", "text/csv");
+    }
+
+    private async Task ExportMouvementsPdf()
+    {
+        await DownloadFile("export/mouvements/pdf", "mouvements.pdf", "application/pdf");
+    }
+
+    private async Task DownloadFile(string endpoint, string fileName, string mimeType)
+    {
+        try
+        {
+            var query = new List<string>();
+            if (Filter.Annee.HasValue) query.Add($"annee={Filter.Annee.Value}");
+            if (Filter.Mois.HasValue) query.Add($"mois={Filter.Mois.Value}");
+            if (Filter.VehiculeId.HasValue) query.Add($"vehiculeId={Filter.VehiculeId.Value}");
+            if (Filter.ChauffeurId.HasValue) query.Add($"chauffeurId={Filter.ChauffeurId.Value}");
+
+            var url = "Statistiques/" + endpoint + (query.Any() ? "?" + string.Join("&", query) : "");
+            var response = await Http.GetAsync(url);
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsByteArrayAsync();
+                var fileContent = Convert.ToBase64String(content);
+                await JS.InvokeVoidAsync("downloadFile", fileName, fileContent, mimeType);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error downloading file: " + ex.Message);
         }
     }
 
@@ -76,3 +291,4 @@
         }
     }
 }
+

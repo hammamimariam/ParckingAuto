@@ -122,22 +122,48 @@ window.renderCharts = function (mois, litresData, enMission, auParking, maintena
     }
 };
 
+window.downloadFile = function (fileName, base64Content, mimeType) {
+    const byteCharacters = atob(base64Content);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+};
+
 window.authStorage = {
     save: function (token, role, userName) {
-        localStorage.setItem('parc_token', token);
-        localStorage.setItem('parc_role', role);
-        localStorage.setItem('parc_user', userName);
+        const expirationTime = Date.now() + (4 * 60 * 60 * 1000); // 4 heures en millisecondes
+        sessionStorage.setItem('parc_token', token);
+        sessionStorage.setItem('parc_role', role);
+        sessionStorage.setItem('parc_user', userName);
+        sessionStorage.setItem('parc_expiration', expirationTime.toString());
     },
     clear: function () {
-        localStorage.removeItem('parc_token');
-        localStorage.removeItem('parc_role');
-        localStorage.removeItem('parc_user');
+        sessionStorage.removeItem('parc_token');
+        sessionStorage.removeItem('parc_role');
+        sessionStorage.removeItem('parc_user');
+        sessionStorage.removeItem('parc_expiration');
     },
     load: function () {
+        const expiration = sessionStorage.getItem('parc_expiration');
+        if (expiration && Date.now() > parseInt(expiration)) {
+            this.clear();
+            return { token: '', role: '', userName: '' };
+        }
         return {
-            token: localStorage.getItem('parc_token') || '',
-            role: localStorage.getItem('parc_role') || '',
-            userName: localStorage.getItem('parc_user') || ''
+            token: sessionStorage.getItem('parc_token') || '',
+            role: sessionStorage.getItem('parc_role') || '',
+            userName: sessionStorage.getItem('parc_user') || ''
         };
     }
 };

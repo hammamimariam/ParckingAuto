@@ -14,11 +14,19 @@ namespace ParckingAuto.Controllers
     {
         private readonly VehiculeService _service;
         private readonly IMapper _mapper;
+        private readonly AuditService _auditService;
 
-        public VehiculesController(VehiculeService service, IMapper mapper)
+        public VehiculesController(VehiculeService service, IMapper mapper, AuditService auditService)
         {
             _service = service;
             _mapper = mapper;
+            _auditService = auditService;
+        }
+
+        private int? GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst("name")?.Value;
+            return string.IsNullOrEmpty(userIdClaim) ? null : int.Parse(userIdClaim);
         }
 
         [HttpGet]
@@ -47,6 +55,14 @@ namespace ParckingAuto.Controllers
             var created = await _service.AddAsync(entity);
             var result = _mapper.Map<VehiculeDto>(created);
             result.Statut = "Au parking";
+
+            await _auditService.LogActionAsync(GetCurrentUserId(), "Create", "Vehicules", created.Id.ToString(), null, new
+            {
+                created.Immatriculation,
+                created.Marque,
+                created.Modele
+            });
+
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, result);
         }
 
@@ -58,11 +74,30 @@ namespace ParckingAuto.Controllers
             var existing = await _service.GetByIdAsync(id);
             if (existing == null) return NotFound();
 
+            var oldValues = new
+            {
+                existing.Immatriculation,
+                existing.Marque,
+                existing.Modele,
+                existing.Kilometrage
+            };
+
             _mapper.Map(dto, existing);
             if (existing.DernierKmVidange <= 0)
                 existing.DernierKmVidange = existing.Kilometrage;
 
             await _service.UpdateAsync(existing);
+
+            var newValues = new
+            {
+                existing.Immatriculation,
+                existing.Marque,
+                existing.Modele,
+                existing.Kilometrage
+            };
+
+            await _auditService.LogActionAsync(GetCurrentUserId(), "Update", "Vehicules", id.ToString(), oldValues, newValues);
+
             return NoContent();
         }
 
@@ -78,7 +113,20 @@ namespace ParckingAuto.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
+            var existing = await _service.GetByIdAsync(id);
+            if (existing == null) return NotFound();
+
+            var oldValues = new
+            {
+                existing.Immatriculation,
+                existing.Marque,
+                existing.Modele
+            };
+
             await _service.DeleteAsync(id);
+
+            await _auditService.LogActionAsync(GetCurrentUserId(), "Delete", "Vehicules", id.ToString(), oldValues, null);
+
             return NoContent();
         }
     }

@@ -12,11 +12,13 @@ namespace ParckingAuto.Controllers
     {
         private readonly JwtService _jwtService;
         private readonly UtilisateurService _userService;
+        private readonly AuditService _auditService;
 
-        public AuthController(JwtService jwtService, UtilisateurService userService)
+        public AuthController(JwtService jwtService, UtilisateurService userService, AuditService auditService)
         {
             _jwtService = jwtService;
             _userService = userService;
+            _auditService = auditService;
         }
 
         [HttpPost("login")]
@@ -26,13 +28,18 @@ namespace ParckingAuto.Controllers
                 .FirstOrDefault(u => u.Email == request.Email);
 
             if (user == null || !PasswordHasher.Verify(request.Password, user.MotDePasse))
+            {
+                await _auditService.LogActionAsync(null, "LoginFailed", "Auth", null, null, new { Email = request.Email });
                 return Unauthorized(new { message = "Email ou mot de passe incorrect" });
+            }
 
             if (!user.MotDePasse.StartsWith("$2"))
             {
                 user.MotDePasse = PasswordHasher.Hash(request.Password);
                 await _userService.UpdateAsync(user);
             }
+
+            await _auditService.LogActionAsync(user.Id, "Login", "Auth", null, null, new { user.Email, user.Role });
 
             var token = _jwtService.GenerateToken(user.Id.ToString(), user.Role.ToString());
 
@@ -59,6 +66,11 @@ namespace ParckingAuto.Controllers
             };
 
             await _userService.AddAsync(user);
+
+            // Get the current user from the JWT token
+            var currentUserId = int.Parse(User.Identity?.Name ?? "0");
+            await _auditService.LogActionAsync(currentUserId, "Create", "Utilisateurs", user.Id.ToString(), null, new { user.Nom, user.Email, user.Role });
+
             return Ok(new { message = "Utilisateur créé avec succès" });
         }
 
@@ -76,6 +88,9 @@ namespace ParckingAuto.Controllers
 
             user.MotDePasse = PasswordHasher.Hash(request.NewPassword);
             await _userService.UpdateAsync(user);
+
+            await _auditService.LogActionAsync(null, "ResetPassword", "Utilisateurs", user.Id.ToString(), null, new { user.Email });
+
             return Ok(new { message = "Mot de passe réinitialisé avec succès" });
         }
     }

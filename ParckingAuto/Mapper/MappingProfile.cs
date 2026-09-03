@@ -64,16 +64,15 @@ public class MappingProfile : Profile
         CreateMap<MaintenanceDto, Maintenance>()
             .ForMember(dest => dest.Vehicule, opt => opt.Ignore());
 
-        CreateMap<Document, DocumentDto>()
-            .ForMember(dest => dest.VehiculeImmatriculation, opt => opt.MapFrom(src => src.Vehicule != null ? src.Vehicule.Immatriculation : ""))
-            .ReverseMap();
-
         CreateMap<Alerte, AlerteDto>()
             .ForMember(dest => dest.VehiculeImmatriculation, opt => opt.MapFrom(src => src.Vehicule != null ? src.Vehicule.Immatriculation : ""))
             .ForMember(dest => dest.TypeAlerte, opt => opt.MapFrom(src => src.TypeAlerte.ToString()))
             .ForMember(dest => dest.Statut, opt => opt.MapFrom(src => src.Statut.ToString()));
 
         CreateMap<Parametres, ParametresDto>().ReverseMap();
+
+        CreateMap<Audit, AuditDto>()
+            .ForMember(dest => dest.UtilisateurNom, opt => opt.MapFrom(src => src.Utilisateur != null ? src.Utilisateur.Nom : ""));
     }
 
     private static TypeCarburantEnum ParseCarburant(string? value)

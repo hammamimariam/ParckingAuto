@@ -109,11 +109,32 @@ a:hover, .btn-link:hover {
     border-radius: 12px;
     box-shadow: 0 6px 18px rgba(0, 48, 73, 0.03);
     transition: all 0.25s ease;
+    height: 100%; /* Ensure all cards have equal height */
+    display: flex;
+    flex-direction: column;
 }
 
 .card-hover-effect:hover {
     transform: translateY(-5px);
     box-shadow: 0 10px 24px rgba(0, 48, 73, 0.1) !important;
+}
+
+/* Prevent text wrapping */
+.text-nowrap {
+    white-space: nowrap !important;
+}
+
+/* Responsive Sidebar & Layout */
+@media (max-width: 991.98px) {
+    .sidebar-custom {
+        width: 100%;
+        height: auto;
+        position: relative;
+    }
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+    }
 }
 
 /* Tables */

@@ -99,9 +99,9 @@
                         <th>Téléphone</th>
                         <th>N° Permis</th>
                         <th>Statut</th>
-                        <th>Échéance Permis</th>
-                        <th>Statut Permis</th>
-                        <th class="text-end">Actions</th>
+                        <th class="text-nowrap">Échéance Permis</th>
+                        <th class="text-nowrap">Statut Permis</th>
+                        <th class="text-end text-nowrap">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -116,25 +116,25 @@
                                 <div class="text-bold text-navy">@c.Prenom @c.Nom</div>
                             </td>
                             <td>@(string.IsNullOrWhiteSpace(c.Email) ? "—" : c.Email)</td>
-                            <td>@c.Telephone</td>
-                            <td>@c.PermisNumero</td>
+                            <td class="text-nowrap">@c.Telephone</td>
+                            <td class="text-nowrap">@c.PermisNumero</td>
                             <td><span class="badge bg-steel">@FormatStatut(c.Statut)</span></td>
-                            <td>@c.PermisExpiration.ToString("dd/MM/yyyy")</td>
-                            <td>
+                            <td class="text-nowrap">@c.PermisExpiration.ToString("dd/MM/yyyy")</td>
+                            <td class="text-nowrap">
                                 @if (isExpired)
                                 {
-                                    <span class="badge bg-red"><i class="bi bi-x-circle me-1"></i>Expiré (depuis @Math.Abs(remainingDays) jours)</span>
+                                    <span class="badge bg-red text-nowrap"><i class="bi bi-x-circle me-1"></i>Expiré (@Math.Abs(remainingDays) j)</span>
                                 }
                                 else if (isWarning)
                                 {
-                                    <span class="badge bg-steel text-white"><i class="bi bi-exclamation-triangle me-1"></i>Expire bientôt (@remainingDays j)</span>
+                                    <span class="badge bg-steel text-white text-nowrap"><i class="bi bi-exclamation-triangle me-1"></i>Expire bientôt (@remainingDays j)</span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Valide (@remainingDays j)</span>
+                                    <span class="badge bg-success text-nowrap"><i class="bi bi-check-circle me-1"></i>Valide (@remainingDays j)</span>
                                 }
                             </td>
-                            <td class="text-end">
+                            <td class="text-end text-nowrap">
                                 <button class="btn btn-sm btn-outline-navy me-1" @onclick="() => EditChauffeur(c)">
                                     <i class="bi bi-pencil"></i> Modifier
                                 </button>

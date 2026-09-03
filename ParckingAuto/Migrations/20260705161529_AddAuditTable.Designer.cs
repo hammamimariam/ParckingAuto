@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ParckingAuto.Data;
 
@@ -11,9 +12,11 @@ using ParckingAuto.Data;
 namespace ParckingAuto.Migrations
 {
     [DbContext(typeof(ParcAutoContext))]
-    partial class ParcAutoContextModelSnapshot : ModelSnapshot
+    [Migration("20260705161529_AddAuditTable")]
+    partial class AddAuditTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -333,13 +336,6 @@ namespace ParckingAuto.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Carrosserie")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<decimal>("ChargeUtile")
-                        .HasColumnType("decimal(65,30)");
-
                     b.Property<string>("CompagnieAssurance")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -351,12 +347,6 @@ namespace ParckingAuto.Migrations
                     b.Property<string>("Couleur")
                         .IsRequired()
                         .HasColumnType("longtext");
-
-                    b.Property<decimal>("Cylindree")
-                        .HasColumnType("decimal(65,30)");
-
-                    b.Property<DateTime?>("DateEtablissementCarteGrise")
-                        .HasColumnType("datetime(6)");
 
                     b.Property<DateTime?>("DatePremiereMiseEnCirculation")
                         .HasColumnType("datetime(6)");
@@ -372,16 +362,8 @@ namespace ParckingAuto.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<string>("ImmatriculationPrecedente")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
                     b.Property<int>("Kilometrage")
                         .HasColumnType("int");
-
-                    b.Property<string>("LieuEtablissementCarteGrise")
-                        .IsRequired()
-                        .HasColumnType("longtext");
 
                     b.Property<string>("Marque")
                         .IsRequired()
@@ -391,13 +373,7 @@ namespace ParckingAuto.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int>("NombreEssieux")
-                        .HasColumnType("int");
-
                     b.Property<int>("NombrePlaces")
-                        .HasColumnType("int");
-
-                    b.Property<int>("NombrePlacesDebout")
                         .HasColumnType("int");
 
                     b.Property<string>("NumeroCarteGrise")
@@ -408,32 +384,13 @@ namespace ParckingAuto.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<string>("NumeroSerieType")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<decimal>("PTAC")
-                        .HasColumnType("decimal(65,30)");
-
                     b.Property<DateTime?>("ProchaineVisite")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<decimal>("PuissanceFiscale")
-                        .HasColumnType("decimal(65,30)");
-
-                    b.Property<string>("Restrictions")
-                        .IsRequired()
-                        .HasColumnType("longtext");
+                    b.Property<int>("PuissanceFiscale")
+                        .HasColumnType("int");
 
                     b.Property<string>("TypeCarburant")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("TypeCommercial")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("TypeConstructeur")
                         .IsRequired()
                         .HasColumnType("longtext");
 

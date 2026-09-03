@@ -6,9 +6,10 @@
 <div class="container mt-4 animate-fade-in">
     <h2 class="title-custom mb-4"><i class="bi bi-speedometer2 me-2"></i>Tableau de bord</h2>
 
-    <div class="row g-3">
-        <div class="col-md-3">
-            <div class="card card-custom card-kpi p-3 shadow-sm border-bottom-navy">
+    <!-- Section KPI Cards (Responsive: col-md-3 → col-sm-6 → col-12) -->
+    <div class="row g-4">
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+            <div class="card card-custom card-kpi p-4 shadow-sm border-bottom-navy">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <span class="text-muted d-block text-uppercase small">Véhicules</span>
@@ -20,8 +21,8 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card card-custom card-kpi p-3 shadow-sm border-bottom-steel">
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+            <div class="card card-custom card-kpi p-4 shadow-sm border-bottom-steel">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <span class="text-muted d-block text-uppercase small">Chauffeurs</span>
@@ -33,8 +34,8 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card card-custom card-kpi p-3 shadow-sm border-bottom-red">
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+            <div class="card card-custom card-kpi p-4 shadow-sm border-bottom-red">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <span class="text-muted d-block text-uppercase small">Alertes</span>
@@ -46,8 +47,8 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card card-custom card-kpi p-3 shadow-sm border-bottom-maroon">
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+            <div class="card card-custom card-kpi p-4 shadow-sm border-bottom-maroon">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <span class="text-muted d-block text-uppercase small">Coût Maintenance (6 mois)</span>
@@ -61,38 +62,55 @@
         </div>
     </div>
 
-    <div class="row mt-3 g-3">
-        <div class="col-md-4">
-            <div class="card card-custom p-3">
-                <span class="text-muted small">Véhicules en mission</span>
-                <h3 class="text-navy mb-0">@VehiculesEnMission</h3>
+    <!-- Secondary Stats Section -->
+    <div class="row mt-4 g-4">
+        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
+            <div class="card card-custom p-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted d-block text-uppercase small">Véhicules en mission</span>
+                        <h3 class="text-navy mb-0">@VehiculesEnMission</h3>
+                    </div>
+                    <i class="bi bi-truck text-steel fs-2"></i>
+                </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card card-custom p-3">
-                <span class="text-muted small">Véhicules au parking</span>
-                <h3 class="text-steel mb-0">@VehiculesAuParking</h3>
+        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
+            <div class="card card-custom p-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted d-block text-uppercase small">Véhicules au parking</span>
+                        <h3 class="text-steel mb-0">@VehiculesAuParking</h3>
+                    </div>
+                    <i class="bi bi-geo-alt text-navy fs-2"></i>
+                </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card card-custom p-3">
-                <span class="text-muted small">Coût carburant (6 mois)</span>
-                <h3 class="text-maroon mb-0">@CoutCarburant6Mois.ToString("N3") DT</h3>
+        <div class="col-lg-4 col-md-6 col-sm-6 col-12">
+            <div class="card card-custom p-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted d-block text-uppercase small">Coût carburant (6 mois)</span>
+                        <h3 class="text-maroon mb-0">@CoutCarburant6Mois.ToString("N3") DT</h3>
+                    </div>
+                    <i class="bi bi-fuel-pump text-red fs-2"></i>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Charts Section -->
     <div class="row mt-4 g-4">
-        <div class="col-md-6">
-            <div class="card card-custom shadow-sm p-4 h-100">
+        <div class="col-lg-6 col-md-12 col-sm-12 col-12">
+            <div class="card card-custom shadow-sm p-4">
                 <h5 class="text-navy mb-3"><i class="bi bi-funnel-fill me-2"></i>Consommation Carburant (Litres / Mois)</h5>
                 <div class="chart-container">
                     <canvas id="fuelChart"></canvas>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card card-custom shadow-sm p-4 h-100">
+        <div class="col-lg-6 col-md-12 col-sm-12 col-12">
+            <div class="card card-custom shadow-sm p-4">
                 <h5 class="text-navy mb-3"><i class="bi bi-cash-coin me-2"></i>Coût Maintenance (DT / Mois)</h5>
                 <div class="chart-container">
                     <canvas id="maintenanceChart"></canvas>
@@ -102,8 +120,8 @@
     </div>
 
     <div class="row mt-4 g-4">
-        <div class="col-md-6">
-            <div class="card card-custom shadow-sm p-4 h-100">
+        <div class="col-lg-6 col-md-12 col-sm-12 col-12">
+            <div class="card card-custom shadow-sm p-4">
                 <h5 class="text-navy mb-3"><i class="bi bi-pie-chart-fill me-2"></i>État du Parc de Véhicules</h5>
                 <div class="chart-container">
                     <canvas id="vehiculesChart"></canvas>

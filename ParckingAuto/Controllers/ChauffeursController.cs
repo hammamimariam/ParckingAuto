@@ -13,11 +13,19 @@ namespace ParckingAuto.Controllers
     {
         private readonly ChauffeurService _service;
         private readonly IMapper _mapper;
+        private readonly AuditService _auditService;
 
-        public ChauffeursController(ChauffeurService service, IMapper mapper)
+        public ChauffeursController(ChauffeurService service, IMapper mapper, AuditService auditService)
         {
             _service = service;
             _mapper = mapper;
+            _auditService = auditService;
+        }
+
+        private int? GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst("name")?.Value;
+            return string.IsNullOrEmpty(userIdClaim) ? null : int.Parse(userIdClaim);
         }
 
         [HttpGet]
@@ -43,6 +51,14 @@ namespace ParckingAuto.Controllers
             {
                 var entity = _mapper.Map<Models.Chauffeur>(dto);
                 var created = await _service.AddAsync(entity, dto.Email, dto.MotDePasse);
+                
+                await _auditService.LogActionAsync(GetCurrentUserId(), "Create", "Chauffeurs", created.Id.ToString(), null, new
+                {
+                    created.Prenom,
+                    created.Nom,
+                    created.PermisNumero
+                });
+                
                 var result = await _service.GetByIdAsync(created.Id);
                 return Ok(_mapper.Map<ChauffeurDto>(result));
             }
@@ -59,8 +75,23 @@ namespace ParckingAuto.Controllers
             if (id != dto.Id) return BadRequest();
             try
             {
+                var old = await _service.GetByIdAsync(id);
+                
                 var entity = _mapper.Map<Models.Chauffeur>(dto);
                 await _service.UpdateAsync(entity, dto.Email, dto.MotDePasse);
+                
+                await _auditService.LogActionAsync(GetCurrentUserId(), "Update", "Chauffeurs", id.ToString(), new
+                {
+                    old?.Prenom,
+                    old?.Nom,
+                    old?.PermisNumero
+                }, new
+                {
+                    entity.Prenom,
+                    entity.Nom,
+                    entity.PermisNumero
+                });
+                
                 return NoContent();
             }
             catch (InvalidOperationException ex)
@@ -75,7 +106,16 @@ namespace ParckingAuto.Controllers
         {
             try
             {
+                var old = await _service.GetByIdAsync(id);
                 await _service.DeleteAsync(id);
+                
+                await _auditService.LogActionAsync(GetCurrentUserId(), "Delete", "Chauffeurs", id.ToString(), new
+                {
+                    old?.Prenom,
+                    old?.Nom,
+                    old?.PermisNumero
+                }, null);
+                
                 return NoContent();
             }
             catch (DbUpdateException)

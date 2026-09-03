@@ -60,29 +60,31 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Services et Repositories
-builder.Services.AddScoped<UtilisateurRepository>();
-builder.Services.AddScoped<UtilisateurService>();
-builder.Services.AddScoped<JwtService>();
-builder.Services.AddScoped<AlerteRepository>();
-builder.Services.AddScoped<AlerteService>();
-builder.Services.AddScoped<CarburantRepository>();
-builder.Services.AddScoped<CarburantService>();
-builder.Services.AddScoped<ChauffeurRepository>();
-builder.Services.AddScoped<ChauffeurService>();
-builder.Services.AddScoped<DocumentRepository>();
-builder.Services.AddScoped<DocumentService>();
-builder.Services.AddScoped<MaintenanceRepository>();
-builder.Services.AddScoped<MaintenanceService>();
-builder.Services.AddScoped<MouvementRepository>();
-builder.Services.AddScoped<MouvementService>();
-builder.Services.AddScoped<VehiculeRepository>();
-builder.Services.AddScoped<VehiculeService>();
-builder.Services.AddScoped<ParametresService>();
+        builder.Services.AddHttpContextAccessor(); // Required for AuditService to get IP/UserAgent
+        builder.Services.AddScoped<UtilisateurRepository>();
+        builder.Services.AddScoped<UtilisateurService>();
+        builder.Services.AddScoped<JwtService>();
+        builder.Services.AddScoped<AlerteRepository>();
+        builder.Services.AddScoped<AlerteService>();
+        builder.Services.AddScoped<CarburantRepository>();
+        builder.Services.AddScoped<CarburantService>();
+        builder.Services.AddScoped<ChauffeurRepository>();
+        builder.Services.AddScoped<ChauffeurService>();
+        builder.Services.AddScoped<MaintenanceRepository>();
+        builder.Services.AddScoped<MaintenanceService>();
+        builder.Services.AddScoped<MouvementRepository>();
+        builder.Services.AddScoped<MouvementService>();
+        builder.Services.AddScoped<VehiculeRepository>();
+        builder.Services.AddScoped<VehiculeService>();
+        builder.Services.AddScoped<ParametresService>();
+        builder.Services.AddScoped<AuditRepository>();
+        builder.Services.AddScoped<AuditService>();
+        builder.Services.AddScoped<IOcrService, OcrService>();
 
-builder.Services.AddScoped(sp => new HttpClient
-{
-    BaseAddress = new Uri("https://localhost:7275/api/")
-});
+        builder.Services.AddScoped(sp => new HttpClient
+        {
+            BaseAddress = new Uri("https://localhost:7275/api/")
+        });
 
 // Autoriser CORS
 builder.Services.AddCors(options =>

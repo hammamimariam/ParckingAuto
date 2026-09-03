@@ -23,10 +23,11 @@ namespace Front
             builder.Services.AddScoped<MouvementService>();
             builder.Services.AddScoped<CarburantService>();
             builder.Services.AddScoped<MaintenanceService>();
-            builder.Services.AddScoped<DocumentService>();
             builder.Services.AddScoped<AlerteService>();
+            builder.Services.AddScoped<AuditService>();
             builder.Services.AddScoped<StatistiqueService>();
             builder.Services.AddScoped<SettingsService>();
+            builder.Services.AddScoped<OcrService>();
             builder.Services.AddSingleton<DialogService>();
 
 

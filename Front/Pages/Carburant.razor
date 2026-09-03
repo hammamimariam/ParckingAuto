@@ -1,7 +1,11 @@
 @page "/carburant"
 @using ParckingAuto.DTO
+@using Front.Services
+@using Microsoft.JSInterop
 @inject HttpClient Http
 @inject DialogService Dialog
+@inject OcrService OcrService
+@inject IJSRuntime JSRuntime
 
 <div class="container mt-4 animate-fade-in">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -66,7 +70,15 @@
     @if (ShowForm)
     {
         <div class="card card-custom p-4 mb-4 animate-slide-down">
-            <h4 class="mb-3 text-navy">Enregistrer un plein de carburant</h4>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="mb-0 text-navy">Enregistrer un plein de carburant</h4>
+                <div>
+                    <InputFile id="carburant-ocr-input" OnChange="OnOcrFileSelected" style="display: none;" accept=".jpg,.jpeg,.png,.pdf" />
+                    <button class="btn btn-outline-navy" @onclick="TriggerCarburantOcrInput">
+                        <i class="bi bi-receipt me-1"></i> Scanner un reçu
+                    </button>
+                </div>
+            </div>
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label class="form-label">Véhicule</label>
@@ -126,24 +138,24 @@
             <table class="table table-custom">
                 <thead>
                     <tr>
-                        <th>Date</th>
+                        <th class="text-nowrap">Date</th>
                         <th>Véhicule</th>
-                        <th>Volume (Litres)</th>
-                        <th>Coût Total</th>
-                        <th>Kilométrage</th>
-                        <th class="text-end">Actions</th>
+                        <th class="text-nowrap">Volume (Litres)</th>
+                        <th class="text-nowrap">Coût Total</th>
+                        <th class="text-nowrap">Kilométrage</th>
+                        <th class="text-end text-nowrap">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var c in Carburants)
                     {
                         <tr>
-                            <td>@c.Date.ToString("dd/MM/yyyy HH:mm")</td>
-                            <td><span class="badge bg-navy">@c.VehiculeImmatriculation</span></td>
-                            <td>@c.Litres.ToString("N2") L</td>
-                            <td class="text-bold text-red">@c.Cout.ToString("N3") DT</td>
-                            <td>@c.Kilometrage.ToString("N0") km</td>
-                            <td class="text-end">
+                            <td class="text-nowrap">@c.Date.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td class="text-nowrap"><span class="badge bg-navy">@c.VehiculeImmatriculation</span></td>
+                            <td class="text-nowrap">@c.Litres.ToString("N2") L</td>
+                            <td class="text-bold text-red text-nowrap">@c.Cout.ToString("N3") DT</td>
+                            <td class="text-nowrap">@c.Kilometrage.ToString("N0") km</td>
+                            <td class="text-end text-nowrap">
                                 <button class="btn btn-sm btn-outline-danger" @onclick="() => DeletePlein(c.Id)">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -203,6 +215,77 @@
     private void CancelForm()
     {
         ShowForm = false;
+    }
+
+    private async Task TriggerCarburantOcrInput()
+    {
+        await JSRuntime.InvokeVoidAsync("eval", "document.getElementById('carburant-ocr-input').click()");
+    }
+
+    private async Task OnOcrFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file == null) return;
+
+        try
+        {
+            await ScanReceiptAsync(file);
+        }
+        catch (Exception ex)
+        {
+            await Dialog.ShowErrorAsync($"Erreur lors du scan : {ex.Message}");
+        }
+    }
+
+    private async Task ScanReceiptAsync(IBrowserFile file)
+    {
+        using var content = new MultipartFormDataContent();
+        var fileStream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024); // 10MB limit
+        content.Add(new StreamContent(fileStream), "file", file.Name);
+
+        var extractedText = await OcrService.ScanDocumentAsync(content);
+        if (!string.IsNullOrWhiteSpace(extractedText))
+        {
+            ParseReceiptText(extractedText);
+            await Dialog.ShowSuccessAsync("Reçu scanné avec succès ! Les champs ont été pré-remplis.");
+        }
+        else
+        {
+            await Dialog.ShowWarningAsync("Aucun texte n'a été extrait du reçu.");
+        }
+    }
+
+    private void ParseReceiptText(string text)
+    {
+        var lines = text.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+        
+        foreach (var line in lines)
+        {
+            var cleanLine = line.Trim();
+            
+            // Try to extract numeric values (price, liters, km)
+            var numberMatches = System.Text.RegularExpressions.Regex.Matches(cleanLine, @"\d+[.,]?\d*");
+            
+            foreach (var match in numberMatches)
+            {
+                var numStr = match.ToString().Replace(',', '.');
+                if (double.TryParse(numStr, out var num))
+                {
+                    if (num > 0 && num <= 200 && NewPlein.Litres == 0)
+                    {
+                        NewPlein.Litres = num; // Liters are usually between 0 and 200
+                    }
+                    else if (num > 0 && num <= 2000 && NewPlein.Cout == 0)
+                    {
+                        NewPlein.Cout = num; // Cost between 0 and 2000 DT
+                    }
+                    else if (num > 1000 && NewPlein.Kilometrage == 0)
+                    {
+                        NewPlein.Kilometrage = num; // Km usually > 1000
+                    }
+                }
+            }
+        }
     }
 
     private async Task SavePlein()

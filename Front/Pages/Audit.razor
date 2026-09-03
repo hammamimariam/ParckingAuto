@@ -1,0 +1,223 @@
+@page "/audit"
+@using ParckingAuto.DTO
+@inject AuditService AuditService
+@inject AuthService AuthService
+
+<div class="container mt-4 animate-fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <h2 class="title-custom mb-0"><i class="bi bi-clock-history text-navy me-2"></i>Journal d'Audit</h2>
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                <input class="form-control border-start-0" 
+                       placeholder="Rechercher..." 
+                       @bind="SearchTerm" 
+                       @bind:after="FilterLogs" />
+            </div>
+            <select class="form-select" style="width: 180px;" @bind="ActionFilter" @bind:after="FilterLogs">
+                <option value="">Toutes les actions</option>
+                <option value="Login">Connexion</option>
+                <option value="LoginFailed">Connexion échouée</option>
+                <option value="Create">Création</option>
+                <option value="Update">Modification</option>
+                <option value="Delete">Suppression</option>
+            </select>
+            <select class="form-select" style="width: 180px;" @bind="TableFilter" @bind:after="FilterLogs">
+                <option value="">Toutes les tables</option>
+                <option value="Auth">Authentification</option>
+                <option value="Utilisateurs">Utilisateurs</option>
+                <option value="Vehicules">Véhicules</option>
+                <option value="Chauffeurs">Chauffeurs</option>
+            </select>
+            <button class="btn btn-custom-primary" @onclick="LoadLogs">
+                <i class="bi bi-arrow-clockwise me-1"></i>Rafraîchir
+            </button>
+        </div>
+    </div>
+
+    @if (Logs == null)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Chargement des logs...</p>
+        </div>
+    }
+    else if (!FilteredLogs.Any())
+    {
+        <div class="card card-custom p-5 text-center shadow-sm">
+            <i class="bi bi-inbox text-muted fs-1 mb-3"></i>
+            <h4 class="text-muted">Aucun log trouvé</h4>
+            <p class="text-muted">Essayez de modifier vos filtres.</p>
+        </div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var log in FilteredLogs)
+            {
+                var actionColor = log.ActionType switch
+                {
+                    "Login" => "success",
+                    "LoginFailed" => "danger",
+                    "Create" => "primary",
+                    "Update" => "warning",
+                    "Delete" => "danger",
+                    _ => "secondary"
+                };
+                <div class="col-12">
+                    <div class="card card-custom shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                                        <span class="badge bg-@actionColor text-white">
+                                            <i class="bi bi-@(log.ActionType switch { "Login" => "box-arrow-in-right", "LoginFailed" => "x-circle", "Create" => "plus-circle", "Update" => "pencil-square", "Delete" => "trash", _ => "info-circle" }) me-1"></i>
+                                            @GetActionName(log.ActionType)
+                                        </span>
+                                        @if (!string.IsNullOrEmpty(log.TableName))
+                                        {
+                                            <span class="badge bg-navy">@GetTableName(log.TableName)</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(log.RecordId))
+                                        {
+                                            <span class="badge bg-outline-navy">ID: @log.RecordId</span>
+                                        }
+                                    </div>
+                                    <h6 class="mb-1 text-navy">
+                                        <i class="bi bi-person-circle me-2"></i>@(log.UtilisateurNom ?? "Système")
+                                        <span class="text-muted small ms-2">
+                                            <i class="bi bi-clock me-1"></i>@log.Timestamp.ToString("dd/MM/yyyy HH:mm:ss")
+                                        </span>
+                                    </h6>
+                                    @if (!string.IsNullOrEmpty(log.IpAddress))
+                                    {
+                                        <p class="text-muted small mb-0">
+                                            <i class="bi bi-geo-alt me-1"></i>@log.IpAddress
+                                            @if (!string.IsNullOrEmpty(log.UserAgent))
+                                            {
+                                                <span class="ms-3"><i class="bi bi-browser-chrome me-1"></i>@log.UserAgent</span>
+                                            }
+                                        </p>
+                                    }
+                                </div>
+                                @if (!string.IsNullOrEmpty(log.OldValues) || !string.IsNullOrEmpty(log.NewValues))
+                                {
+                                    <button class="btn btn-sm btn-outline-navy" @onclick="() => ToggleDetails(log.Id)">
+                                        <i class="bi bi-eye me-1"></i>Détails
+                                    </button>
+                                }
+                            </div>
+                            @if (ExpandedLogId == log.Id)
+                            {
+                                <div class="mt-3 pt-3 border-top">
+                                    @if (!string.IsNullOrEmpty(log.OldValues))
+                                    {
+                                        <div class="mb-2">
+                                            <span class="fw-semibold text-danger"><i class="bi bi-arrow-left-circle me-1"></i>Anciennes valeurs</span>
+                                            <div class="card bg-light border-0 mt-1 p-3 small">
+                                                <pre class="mb-0">@log.OldValues</pre>
+                                            </div>
+                                        </div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(log.NewValues))
+                                    {
+                                        <div>
+                                            <span class="fw-semibold text-success"><i class="bi bi-arrow-right-circle me-1"></i>Nouvelles valeurs</span>
+                                            <div class="card bg-light border-0 mt-1 p-3 small">
+                                                <pre class="mb-0">@log.NewValues</pre>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<AuditDto>? Logs;
+    private List<AuditDto>? FilteredLogs;
+    private string SearchTerm = "";
+    private string ActionFilter = "";
+    private string TableFilter = "";
+    private int? ExpandedLogId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthService.Role != "Administrateur") return;
+        await LoadLogs();
+    }
+
+    private async Task LoadLogs()
+    {
+        try
+        {
+            Logs = await AuditService.GetAllAsync();
+            FilteredLogs = Logs;
+            FilterLogs();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors du chargement des logs : {ex.Message}");
+        }
+    }
+
+    private void FilterLogs()
+    {
+        if (Logs == null) return;
+
+        var query = Logs.AsEnumerable();
+
+        if (!string.IsNullOrEmpty(SearchTerm))
+        {
+            var term = SearchTerm.ToLower();
+            query = query.Where(l =>
+                l.UtilisateurNom?.ToLower().Contains(term) == true ||
+                l.ActionType.ToLower().Contains(term) ||
+                l.TableName.ToLower().Contains(term) ||
+                l.RecordId?.ToLower().Contains(term) == true ||
+                l.IpAddress?.ToLower().Contains(term) == true);
+        }
+
+        if (!string.IsNullOrEmpty(ActionFilter))
+        {
+            query = query.Where(l => l.ActionType == ActionFilter);
+        }
+
+        if (!string.IsNullOrEmpty(TableFilter))
+        {
+            query = query.Where(l => l.TableName == TableFilter);
+        }
+
+        FilteredLogs = query.OrderByDescending(l => l.Timestamp).ToList();
+    }
+
+    private void ToggleDetails(int logId)
+    {
+        ExpandedLogId = ExpandedLogId == logId ? null : logId;
+    }
+
+    private static string GetActionName(string action) => action switch
+    {
+        "Login" => "Connexion",
+        "LoginFailed" => "Connexion échouée",
+        "Create" => "Création",
+        "Update" => "Modification",
+        "Delete" => "Suppression",
+        "ResetPassword" => "Réinitialisation mot de passe",
+        _ => action
+    };
+
+    private static string GetTableName(string table) => table switch
+    {
+        "Auth" => "Authentification",
+        "Utilisateurs" => "Utilisateurs",
+        "Vehicules" => "Véhicules",
+        "Chauffeurs" => "Chauffeurs",
+        _ => table
+    };
+}
